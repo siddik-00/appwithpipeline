@@ -533,3 +533,6 @@ Additional optional FastAPI dependencies:
 ## License
 
 This project is licensed under the terms of the MIT license.
+
+## CI/CD pipelines
+This repository includes automated CI/CD pipelines: a Dev Pipeline (on develop) and a Production Pipeline (on main).
