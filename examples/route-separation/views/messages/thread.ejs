@@ -1,0 +1,76 @@
+<%- include('../header') -%>
+
+<div class="chat-head">
+  <span class="avatar-sm"><%= other.name.charAt(0).toUpperCase() %></span>
+  <div>
+    <h1><%= other.name %></h1>
+    <span class="muted small"><%= other.email %></span>
+  </div>
+  <div class="chat-actions">
+    <a class="btn btn-ghost" href="/u/<%= other.id %>">Profile</a>
+    <a class="btn btn-ghost" href="/video?with=<%= other.id %>">Video call</a>
+  </div>
+</div>
+
+<div id="chat" data-thread="<%= other.id %>">
+  <% msgs.forEach(function(m) { %>
+    <div class="bubble <%= m.fromId === me.id ? 'me' : 'them' %>" data-mid="<%= m.id %>">
+      <div class="bubble-inner">
+        <span class="bubble-text"><%= m.text %></span>
+        <span class="bubble-when"><%= new Date(m.createdAt).toLocaleTimeString() %></span>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<form id="chat-form" method="post" action="/messages/<%= other.id %>">
+  <input type="text" name="text" placeholder="Type a message..." required maxlength="500" autocomplete="off" />
+  <button class="btn" type="submit">Send</button>
+</form>
+
+<script>
+(function () {
+  var chat = document.getElementById('chat');
+  if (!chat) return;
+  var threadId = chat.getAttribute('data-thread');
+  var lastId = 0;
+  var items = Array.prototype.slice.call(chat.querySelectorAll('[data-mid]'));
+  if (items.length) lastId = Number(items[items.length - 1].getAttribute('data-mid'));
+
+  function esc (s) {
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function append (m) {
+    var div = document.createElement('div');
+    div.className = 'bubble ' + (m.fromMe ? 'me' : 'them');
+    div.setAttribute('data-mid', m.id);
+    div.innerHTML =
+      '<div class="bubble-inner">' +
+      '<span class="bubble-text">' + esc(m.text) + '</span>' +
+      '<span class="bubble-when">' + new Date(m.createdAt).toLocaleTimeString() + '</span>' +
+      '</div>';
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function poll () {
+    fetch('/messages/' + threadId + '/poll?after=' + lastId)
+      .then(function (r) { return r.json() })
+      .then(function (list) {
+        list.forEach(function (m) {
+          append(m);
+          lastId = Math.max(lastId, m.id);
+        });
+      })
+      .catch(function () {})
+      .then(function () { setTimeout(poll, 2000) });
+  }
+
+  poll();
+})();
+</script>
+
+<%- include('../footer') -%>

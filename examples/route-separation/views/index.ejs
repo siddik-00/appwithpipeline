@@ -1,0 +1,73 @@
+<%- include('header') -%>
+
+<div class="hero">
+  <span class="hero-badge"><%= locals.user && user ? 'Welcome back' : 'Welcome' %></span>
+  <h1><%= locals.user && user ? 'Hello, ' + user.name : 'Express Social' %></h1>
+  <p class="hero-sub">A Facebook-style demo with a news feed, direct messages, video calls and profiles — all built on Express sessions and WebRTC.</p>
+
+  <% if (locals.user && user) { %>
+    <div class="hero-cta">
+      <a class="btn" href="/feed">Open the feed</a>
+      <a class="btn btn-ghost-light" href="/messages">Messages</a>
+      <a class="btn btn-ghost-light" href="/video">Start a video call</a>
+    </div>
+  <% } else { %>
+    <div class="hero-cta">
+      <a class="btn" href="/login">Log in</a>
+      <a class="btn btn-ghost-light" href="/register">Create account</a>
+    </div>
+  <% } %>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><span class="stat-value">4+</span><span class="stat-label">Users</span></div>
+  <div class="stat"><span class="stat-value">4</span><span class="stat-label">Feed posts</span></div>
+  <div class="stat"><span class="stat-value">3</span><span class="stat-label">Blog posts</span></div>
+  <div class="stat"><span class="stat-value">WebRTC</span><span class="stat-label">Video calls</span></div>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="feature-icon">&#128172;</span>
+    <h3><a href="/feed">News Feed</a></h3>
+    <p class="muted">Post updates, like, and comment — just like Facebook.</p>
+    <a class="link" href="/feed">Open feed &rarr;</a>
+  </div>
+
+  <div class="feature-card">
+    <span class="feature-icon">&#128231;</span>
+    <h3><a href="/messages">Messages</a></h3>
+    <p class="muted">Private 1-on-1 chats with live polling updates and unread badges.</p>
+    <a class="link" href="/messages">Go to inbox &rarr;</a>
+  </div>
+
+  <div class="feature-card">
+    <span class="feature-icon">&#128249;</span>
+    <h3><a href="/video">Video Calls</a></h3>
+    <p class="muted">Real-time WebRTC calls with mute, camera toggle and room sharing.</p>
+    <a class="link" href="/video">Start a call &rarr;</a>
+  </div>
+
+  <div class="feature-card">
+    <span class="feature-icon">&#128100;</span>
+    <h3><a href="/users">Profiles &amp; Follow</a></h3>
+    <p class="muted">Follow teammates, see follower counts, and browse their posts.</p>
+    <a class="link" href="/users">Browse users &rarr;</a>
+  </div>
+
+  <div class="feature-card">
+    <span class="feature-icon">&#128214;</span>
+    <h3><a href="/posts">Team Blog</a></h3>
+    <p class="muted">Articles with authors, categories, tags and full reading pages.</p>
+    <a class="link" href="/posts">Read posts &rarr;</a>
+  </div>
+
+  <div class="feature-card">
+    <span class="feature-icon">&#128274;</span>
+    <h3>Protected Platform</h3>
+    <p class="muted">Everything is guarded by a session-based authentication portal.</p>
+    <a class="link" href="/logout">Test logout &rarr;</a>
+  </div>
+</div>
+
+<%- include('footer') -%>

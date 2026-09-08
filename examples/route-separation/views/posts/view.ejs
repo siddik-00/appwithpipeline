@@ -1,0 +1,34 @@
+<%- include('../header') -%>
+
+<div class="post-detail">
+  <header class="detail-head">
+    <p class="post-meta">
+      <span class="category"><%= post.category %></span>
+      <span class="dot">&middot;</span>
+      <span class="date"><%= post.date %></span>
+      <span class="dot">&middot;</span>
+      <span class="read"><%= post.readTime %> min read</span>
+    </p>
+
+    <h1><%= post.title %></h1>
+
+    <div class="detail-byline">
+      <span class="author-avatar"><%= post.author.charAt(0).toUpperCase() %></span>
+      Posted by <a href="/user/<%= post.authorId %>"><strong><%= post.author %></strong></a>
+    </div>
+
+    <div class="tags">
+      <% post.tags.forEach(function(tag) { %>
+        <span class="tag">#<%= tag %></span>
+      <% }) %>
+    </div>
+  </header>
+
+  <div class="card detail-body">
+    <p><%= post.body %></p>
+  </div>
+
+  <p><a class="btn btn-ghost" href="/posts">&larr; Back to all posts</a></p>
+</div>
+
+<%- include('../footer') -%>

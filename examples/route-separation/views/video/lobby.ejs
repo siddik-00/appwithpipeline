@@ -1,0 +1,32 @@
+<%- include('../header') -%>
+
+<header class="page-head">
+  <h1>Video call</h1>
+  <p class="muted">Start a one-to-one WebRTC call with a teammate</p>
+</header>
+
+<% if (withUser) { %>
+  <div class="call-invite card">
+    <p class="muted">Calling <strong><%= withUser.name %></strong></p>
+    <form method="get" action="/video/room/<%= me.id %>-<%= withUser.id %>">
+      <button class="btn" type="submit">Start call with <%= withUser.name %> &rarr;</button>
+    </form>
+  </div>
+<% } else { %>
+  <div class="call-invite card">
+    <h3>Pick someone to call</h3>
+    <div class="people-list">
+      <% users.filter(function (u) { return u.id !== me.id }).forEach(function (u) { %>
+        <a class="person-row" href="/video?with=<%= u.id %>">
+          <span class="avatar-sm"><%= u.name.charAt(0).toUpperCase() %></span>
+          <div>
+            <strong><%= u.name %></strong>
+            <span class="muted small"><%= u.email %></span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../footer') -%>

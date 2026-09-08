@@ -1,0 +1,41 @@
+<%- include('../header') -%>
+
+<header class="page-head">
+  <h1>Messages</h1>
+  <p class="muted">Private conversations between <%= me.name %> and the team</p>
+</header>
+
+<div class="inbox-layout">
+  <aside class="inbox-list">
+    <h3 class="inbox-title">Conversations</h3>
+    <% if (!contacts.length) { %>
+      <p class="muted small">No conversations yet. Pick someone below to start chatting.</p>
+    <% } %>
+    <% contacts.forEach(function(c) { %>
+      <a class="inbox-row" href="/messages/<%= c.id %>">
+        <span class="avatar-sm"><%= c.name.charAt(0).toUpperCase() %></span>
+        <div class="inbox-row-main">
+          <strong><%= c.name %> <% if (c.unread) { %><span class="unread-badge"><%= c.unread %></span><% } %></strong>
+          <span class="muted small inbox-preview"><%= c.lastText %></span>
+        </div>
+      </a>
+    <% }) %>
+  </aside>
+
+  <section class="inbox-new">
+    <h3 class="inbox-title">Start a conversation</h3>
+    <div class="people-list">
+      <% everyone.forEach(function(u) { %>
+        <a class="person-row" href="/messages/<%= u.id %>">
+          <span class="avatar-sm"><%= u.name.charAt(0).toUpperCase() %></span>
+          <div>
+            <strong><%= u.name %></strong>
+            <span class="muted small"><%= u.email %></span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </section>
+</div>
+
+<%- include('../footer') -%>

@@ -1,0 +1,39 @@
+<%- include('../header') -%>
+
+<header class="page-head">
+  <h1><%= title %></h1>
+  <p class="muted">The people on this network</p>
+</header>
+
+<table id="users">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Followers</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% users.forEach(function(user) { %>
+      <tr>
+        <td>
+          <span class="avatar-xs"><%= user.name.charAt(0) %></span>
+          <a href="/u/<%= user.id %>"><%= user.name %></a>
+          <% if (user.id === me.id) { %><span class="following-tag">You</span><% } %>
+        </td>
+        <td><%= user.email %></td>
+        <td><%= user.followers %></td>
+        <td>
+          <% if (user.id !== me.id) { %>
+            <a class="btn btn-ghost" href="/messages/<%= user.id %>">Message</a>
+            <a class="btn btn-ghost" href="/video?with=<%= user.id %>">Video call</a>
+          <% } %>
+          <a class="btn btn-ghost" href="/user/<%= user.id %>/edit">Edit</a>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<%- include('../footer') -%>

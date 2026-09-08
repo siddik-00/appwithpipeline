@@ -1,0 +1,33 @@
+<%- include('../header') -%>
+
+<header class="page-head">
+  <h1>Posts</h1>
+  <p class="muted">Latest articles from the team blog</p>
+</header>
+
+<div id="posts">
+  <% posts.forEach(function(post, index) { %>
+    <article class="post-card">
+      <div class="post-meta">
+        <span class="category"><%= post.category %></span>
+        <span class="dot">&middot;</span>
+        <span class="date"><%= post.date %></span>
+        <span class="dot">&middot;</span>
+        <span class="read"><%= post.readTime %> min read</span>
+      </div>
+
+      <h2 class="post-title"><a href="/post/<%= index %>"><%= post.title %></a></h2>
+      <p class="post-excerpt"><%= post.excerpt %></p>
+
+      <div class="post-footer">
+        <span class="author">
+          <span class="author-avatar"><%= post.author.charAt(0).toUpperCase() %></span>
+          Posted by <a href="/user/<%= post.authorId %>"><%= post.author %></a>
+        </span>
+        <a class="btn btn-ghost read-more" href="/post/<%= index %>">Read more &rarr;</a>
+      </div>
+    </article>
+  <% }) %>
+</div>
+
+<%- include('../footer') -%>
