@@ -398,3 +398,6 @@ exclude = [
 
 [tool.ty.terminal]
 error-on-warning = true
+
+[tool.vercel]
+entrypoint = "docs_src.first_steps.tutorial001_py310:app"
