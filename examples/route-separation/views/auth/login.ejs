@@ -1,0 +1,25 @@
+<%- include('../header') -%>
+
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>Log In</h1>
+
+    <% if (locals.error && error) { %>
+      <p class="auth-msg error"><%= error %></p>
+    <% } %>
+
+    <form id="auth-form" method="post" action="/login">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="e.g. tj" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="e.g. foobar" required />
+
+      <button class="btn" type="submit">Log in</button>
+    </form>
+
+    <p class="auth-switch">Don't have an account? <a href="/register">Register</a></p>
+  </div>
+</div>
+
+<%- include('../footer') -%>

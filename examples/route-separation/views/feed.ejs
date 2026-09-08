@@ -1,0 +1,71 @@
+<%- include('header') -%>
+
+<header class="page-head">
+  <h1>Feed</h1>
+  <p class="muted">What's happening across the team</p>
+</header>
+
+<form id="post-box" method="post" action="/feed">
+  <div class="post-input">
+    <span class="avatar-sm"><%= me.name.charAt(0).toUpperCase() %></span>
+    <input type="text" name="text" placeholder="What's on your mind, <%= me.name %>?" required maxlength="500" />
+  </div>
+  <div class="post-actions">
+    <span class="muted small">Max 500 characters</span>
+    <button class="btn" type="submit">Post</button>
+  </div>
+</form>
+
+<div id="feed">
+  <% posts.forEach(function(post, i) { %>
+    <article class="feed-post">
+      <div class="feed-head">
+        <span class="avatar-sm"><%= post.author.name.charAt(0).toUpperCase() %></span>
+        <div class="feed-head-meta">
+          <strong><a href="/u/<%= post.author.id %>"><%= post.author.name %></a></strong>
+          <% if (post.following) { %>
+            <span class="following-tag">Following</span>
+          <% } %>
+          <span class="muted small"><%= new Date(post.createdAt).toLocaleString() %></span>
+        </div>
+      </div>
+
+      <p class="feed-text"><%= post.text %></p>
+
+      <div class="feed-meta">
+        <span class="muted small"><%= post.likes.length %> likes</span>
+        <span class="muted small"><%= post.comments.length %> comments</span>
+      </div>
+
+      <div class="feed-actions">
+        <form method="post" action="/feed/<%= post.id %>/like">
+          <button type="submit" class="feed-btn <%= post.liked ? 'active' : '' %>">
+            <% if (post.liked) { %>&#128147; Liked<% } else { %>&#9825; Like<% } %>
+          </button>
+        </form>
+        <span class="comment-count">&#128172;</span>
+      </div>
+
+      <% if (post.comments.length) { %>
+        <div class="comments">
+          <% post.comments.forEach(function(c) { %>
+            <div class="comment">
+              <span class="avatar-xs"><%= c.author.name.charAt(0) %></span>
+              <div class="comment-body">
+                <strong><a href="/u/<%= c.author.id %>"><%= c.author.name %></a></strong>
+                <span class="comment-text"><%= c.text %></span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <form class="comment-form" method="post" action="/feed/<%= post.id %>/comment">
+        <input type="text" name="text" placeholder="Write a comment..." maxlength="300" required />
+        <button class="btn btn-ghost" type="submit">Comment</button>
+      </form>
+    </article>
+  <% }) %>
+</div>
+
+<%- include('footer') -%>

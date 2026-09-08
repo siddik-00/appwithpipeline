@@ -1,0 +1,175 @@
+<%- include('../header') -%>
+
+<header class="page-head">
+  <h1>Video call &middot; room <%= room %></h1>
+  <p class="muted">
+    Share this page with the other person: send them
+    <code><%= shareUrl %></code>
+  </p>
+</header>
+
+<div class="video-stage">
+  <div class="video-box">
+    <video id="myVideo" autoplay playsinline muted></video>
+    <span class="video-label">You (<%= me.name %>)</span>
+  </div>
+  <div class="video-box">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <span class="video-label">Remote</span>
+  </div>
+</div>
+
+<div class="call-status" id="status">Connecting to the room...</div>
+
+<div class="video-controls">
+  <button class="ctrl-btn" id="muteBtn" type="button">&#127908; Mute</button>
+  <button class="ctrl-btn" id="camBtn"  type="button">&#128249; Stop camera</button>
+  <a class="btn btn-ghost" href="/video">Leave</a>
+</div>
+
+<script>
+(function () {
+  var room = '<%= room %>';
+  var myId = <%= meId %>;
+  var pc = null;
+  var localStream = null;
+  var started = false;
+  var pole = null;
+  var since = 0;
+
+  var $ = function (id) { return document.getElementById(id) };
+  var statusEl = $('status');
+  var myVideo = $('myVideo');
+  var remoteVideo = $('remoteVideo');
+
+  function setStatus (txt) {
+    statusEl.textContent = txt;
+  }
+
+  function post (path, data) {
+    return fetch('/video/' + room + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+  }
+
+  function get (path) {
+    return fetch('/video/' + room + path).then(function (r) { return r.json() })
+  }
+
+  function setupPc () {
+    pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+    localStream.getTracks().forEach(function (t) {
+      pc.addTrack(t, localStream);
+    });
+
+    pc.ontrack = function (e) {
+      remoteVideo.srcObject = e.streams[0];
+    };
+
+    pc.onicecandidate = function (e) {
+      if (e.candidate) {
+        post('/candidate', { candidate: e.candidate });
+      }
+    };
+
+    pc.onconnectionstatechange = function () {
+      if (pc.connectionState === 'connected') setStatus('Connected &#10004;');
+      else if (pc.connectionState === 'failed') setStatus('Call failed — open the same room link in another tab/browser.');
+    };
+  }
+
+  function start (isOfferer) {
+    started = true;
+    setupPc();
+
+    var done = function () {
+      setStatus('Connected to peer. Media may take a second...');
+    };
+
+    if (isOfferer) {
+      pc.createOffer()
+        .then(function (desc) { return pc.setLocalDescription(desc) })
+        .then(function () { return post('/offer', { desc: pc.localDescription }) })
+        .then(function () {
+          // wait for the answer
+          var wait = setInterval(function () {
+            get('/answer').then(function (r) {
+              if (r.answer) {
+                clearInterval(wait);
+                pc.setRemoteDescription(r.answer).then(done);
+              }
+            });
+          }, 1000);
+        });
+    } else {
+      // poll for an offer
+      var wait = setInterval(function () {
+        get('/offer').then(function (r) {
+          if (r.offer) {
+            clearInterval(wait);
+            pc.setRemoteDescription(r.offer)
+              .then(function () { return pc.createAnswer() })
+              .then(function (desc) { return pc.setLocalDescription(desc) })
+              .then(function () { return post('/answer', { desc: pc.localDescription }) })
+              .then(done);
+          }
+        });
+      }, 1000);
+    }
+  }
+
+  function pollCandidates () {
+    pole = setInterval(function () {
+      get('/candidate?since=' + since).then(function (r) {
+        r.candidates.forEach(function (c) {
+          since = r.count;
+          if (c.candidate && c.from !== myId) {
+            pc.addIceCandidate(c.candidate).catch(function () {});
+          }
+        });
+      });
+    }, 1500);
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(function (stream) {
+      localStream = stream;
+      myVideo.srcObject = stream;
+      setStatus('Camera ready. Waiting for the other person to join...');
+
+      get('/role').then(function (r) {
+        start(r.role === 'offerer');
+        pollCandidates();
+      });
+    })
+    .catch(function () {
+      setStatus('Could not access camera/microphone. Check permissions, then refresh.');
+    });
+
+  $('muteBtn').addEventListener('click', function () {
+    if (!localStream) return;
+    var audio = localStream.getAudioTracks()[0];
+    if (!audio) return;
+    audio.enabled = !audio.enabled;
+    this.textContent = audio.enabled ? '\u{1F3A4} Mute' : '\u{1F3A4} Unmute';
+  });
+
+  $('camBtn').addEventListener('click', function () {
+    if (!localStream) return;
+    var video = localStream.getVideoTracks()[0];
+    if (!video) return;
+    video.enabled = !video.enabled;
+    this.textContent = video.enabled ? '\u{1F4F7} Stop camera' : '\u{1F4F7} Start camera';
+  });
+
+  window.addEventListener('beforeunload', function () {
+    if (pole) clearInterval(pole);
+    if (pc) pc.close();
+  });
+})();
+</script>
+
+<%- include('../footer') -%>

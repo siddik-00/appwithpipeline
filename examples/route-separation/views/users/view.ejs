@@ -1,0 +1,60 @@
+<%- include('../header') -%>
+
+<div class="profile">
+  <div class="profile-card">
+    <div class="profile-left">
+      <div class="avatar-lg"><%= user.name.charAt(0).toUpperCase() %></div>
+      <div>
+        <h1><%= user.name %></h1>
+        <p class="muted"><%= user.email %></p>
+        <% if (user.id === me.id) { %>
+          <span class="following-tag">This is you</span>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="stat-min">
+        <span class="stat-val"><%= followers %></span>
+        <span class="stat-lbl">Followers</span>
+      </div>
+      <div class="stat-min">
+        <span class="stat-val"><%= followingCount %></span>
+        <span class="stat-lbl">Following</span>
+      </div>
+      <div class="stat-min">
+        <span class="stat-val"><%= posts.length %></span>
+        <span class="stat-lbl">Posts</span>
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      <% if (user.id !== me.id) { %>
+        <form method="post" action="/u/<%= user.id %>/follow">
+          <button class="btn <%= following ? 'btn-following' : '' %>" type="submit">
+            <% if (following) { %>Following&#10003;<% } else { %>+ Follow<% } %>
+          </button>
+        </form>
+        <a class="btn btn-ghost" href="/messages/<%= user.id %>">Message</a>
+        <a class="btn btn-ghost" href="/video?with=<%= user.id %>">Video call</a>
+      <% } else { %>
+        <a class="btn btn-ghost" href="/user/<%= user.id %>/edit">Edit profile</a>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="profile-posts">
+    <h3>Posts by <%= user.name %></h3>
+    <% if (!posts.length) { %>
+      <p class="muted">No posts yet.</p>
+    <% } %>
+    <% posts.forEach(function(post) { %>
+      <article class="feed-post">
+        <p class="feed-text"><%= post.text %></p>
+        <span class="muted small"><%= new Date(post.createdAt).toLocaleString() %> &middot; <%= post.likes.length %> likes &middot; <%= post.comments.length %> comments</span>
+      </article>
+    <% }) %>
+  </div>
+</div>
+
+<%- include('../footer') -%>
