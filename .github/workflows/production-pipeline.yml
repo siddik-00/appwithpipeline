@@ -26,7 +26,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
           cache-dependency-glob: |
@@ -55,7 +55,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
 
       - name: Export dependencies
         run: uv export --no-dev --group tests --extra all --format requirements-txt > requirements.lock.txt
@@ -78,7 +78,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
           cache-dependency-glob: |
@@ -111,7 +111,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
 
       - name: Build package
         run: uv build
