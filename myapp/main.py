@@ -1,16 +1,24 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from uuid import uuid4
 
-from fastapi import FastAPI, Depends, HTTPException, Cookie, Body, Request
+from fastapi import Body, Cookie, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pwdlib import PasswordHash
 from sqlmodel import Session, select
 
 from myapp.db import engine
-from myapp.models import User, Post, Comment, Like, Bookmark, Follow, Story, Notification
+from myapp.models import (
+    Bookmark,
+    Comment,
+    Follow,
+    Like,
+    Notification,
+    Post,
+    Story,
+    User,
+)
 
 password_hash = PasswordHash.recommended()
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -130,16 +138,16 @@ def get_db():
 
 
 def get_current_user(
-    session_token: Optional[str] = Cookie(default=None),
+    session_token: str | None = Cookie(default=None),
     db: Session = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     if not session_token or session_token not in SESSIONS:
         return None
     username = SESSIONS[session_token]
     return db.exec(select(User).where(User.username == username)).first()
 
 
-def require_user(user: Optional[User] = Depends(get_current_user)) -> User:
+def require_user(user: User | None = Depends(get_current_user)) -> User:
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
@@ -149,7 +157,7 @@ def pick_color() -> str:
     return AVATAR_COLORS[len(SESSIONS) % len(AVATAR_COLORS)]
 
 
-def notify(db: Session, user_id: int, actor_id: Optional[int], type: str, message: str):
+def notify(db: Session, user_id: int, actor_id: int | None, type: str, message: str):
     db.add(Notification(user_id=user_id, actor_id=actor_id, type=type, message=message))
 
 
@@ -233,7 +241,7 @@ async def login(body: dict = Body(...), db: Session = Depends(get_db)):
 
 
 @app.post("/api/auth/logout")
-async def logout(session_token: Optional[str] = Cookie(default=None), db: Session = Depends(get_db)):
+async def logout(session_token: str | None = Cookie(default=None), db: Session = Depends(get_db)):
     if session_token:
         username = SESSIONS.pop(session_token, None)
         if username:
@@ -246,13 +254,13 @@ async def logout(session_token: Optional[str] = Cookie(default=None), db: Sessio
 
 
 @app.get("/api/me")
-async def me(user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def me(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return {"user": None}
     followers = len(db.exec(select(Follow).where(Follow.following_id == user.id)).all())
     following = len(db.exec(select(Follow).where(Follow.follower_id == user.id)).all())
     posts = len(db.exec(select(Post).where(Post.user_id == user.id)).all())
-    unread = len(db.exec(select(Notification).where(Notification.user_id == user.id, Notification.read == False)).all())
+    unread = len(db.exec(select(Notification).where(Notification.user_id == user.id, not Notification.read)).all())
     return {"user": public_user(user), "followers": followers, "following": following, "posts": posts, "unread": unread}
 
 
@@ -272,7 +280,7 @@ def build_comments(db: Session, post_id: int) -> list:
     return result
 
 
-def build_post(db: Session, p: Post, user: Optional[User]) -> dict:
+def build_post(db: Session, p: Post, user: User | None) -> dict:
     author = db.get(User, p.user_id)
     my_like = db.exec(select(Like).where(Like.post_id == p.id, Like.user_id == user.id)).first() if user else None
     likes = db.exec(select(Like).where(Like.post_id == p.id)).all()
@@ -289,13 +297,13 @@ def build_post(db: Session, p: Post, user: Optional[User]) -> dict:
 
 
 @app.get("/api/feed")
-async def get_feed(user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_feed(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     posts = db.exec(select(Post).order_by(Post.created_at.desc())).all()
     return {"user": public_user(user) if user else None, "posts": [build_post(db, p, user) for p in posts]}
 
 
 @app.get("/api/search")
-async def search(q: str = "", user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def search(q: str = "", user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     q = q.strip().lower()
     results = []
     if q:
@@ -313,7 +321,7 @@ async def search(q: str = "", user: Optional[User] = Depends(get_current_user), 
 
 
 @app.get("/api/trending")
-async def trending(user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def trending(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     topics = [
         {"tag": "#StarConnect", "posts": "12.5k posts"},
         {"tag": "#FastAPI", "posts": "8.2k posts"},
@@ -325,7 +333,7 @@ async def trending(user: Optional[User] = Depends(get_current_user), db: Session
 
 
 @app.get("/api/stories")
-async def get_stories(user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_stories(user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     stories = db.exec(select(Story).order_by(Story.created_at.desc())).all()
     return {"stories": [
         {
@@ -500,7 +508,7 @@ async def get_notifications(user: User = Depends(require_user), db: Session = De
 
 @app.post("/api/notifications/read")
 async def mark_read(user: User = Depends(require_user), db: Session = Depends(get_db)):
-    notifs = db.exec(select(Notification).where(Notification.user_id == user.id, Notification.read == False)).all()
+    notifs = db.exec(select(Notification).where(Notification.user_id == user.id, not Notification.read)).all()
     for n in notifs:
         n.read = True
     db.commit()
@@ -510,7 +518,7 @@ async def mark_read(user: User = Depends(require_user), db: Session = Depends(ge
 # ---------- Profile ----------
 
 @app.get("/api/users/{user_id}/posts")
-async def user_posts(user_id: int, user: Optional[User] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def user_posts(user_id: int, user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     target = db.get(User, user_id)
     if not target:
         raise HTTPException(status_code=404, detail="User not found")

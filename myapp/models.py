@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 
 class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)
     password_hash: str
     name: str = ""
@@ -17,7 +16,7 @@ class User(SQLModel, table=True):
 
 
 class Post(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
     content: str
     gradient: str = Field(default="linear-gradient(135deg,#8364E8,#D397FA)")
@@ -25,7 +24,7 @@ class Post(SQLModel, table=True):
 
 
 class Comment(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     post_id: int = Field(index=True, foreign_key="post.id")
     user_id: int = Field(index=True, foreign_key="user.id")
     content: str
@@ -33,7 +32,7 @@ class Comment(SQLModel, table=True):
 
 
 class Like(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     post_id: int = Field(index=True, foreign_key="post.id")
     user_id: int = Field(index=True, foreign_key="user.id")
     reaction: str = Field(default="like")
@@ -41,20 +40,20 @@ class Like(SQLModel, table=True):
 
 
 class Bookmark(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     post_id: int = Field(index=True, foreign_key="post.id")
     user_id: int = Field(index=True, foreign_key="user.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Follow(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     follower_id: int = Field(index=True, foreign_key="user.id")
     following_id: int = Field(index=True, foreign_key="user.id")
 
 
 class Story(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
     content: str
     gradient: str = Field(default="linear-gradient(135deg,#6200EE,#D397FA)")
@@ -62,9 +61,9 @@ class Story(SQLModel, table=True):
 
 
 class Notification(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
-    actor_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    actor_id: int | None = Field(default=None, foreign_key="user.id")
     type: str
     message: str
     read: bool = Field(default=False)

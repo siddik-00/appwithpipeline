@@ -1,16 +1,14 @@
-from pathlib import Path
-
 from sqlmodel import SQLModel, create_engine
 
 from myapp.models import (  # noqa: F401  (ensure tables registered)
-    User,
-    Post,
-    Comment,
-    Like,
     Bookmark,
+    Comment,
     Follow,
-    Story,
+    Like,
     Notification,
+    Post,
+    Story,
+    User,
 )
 
 DATABASE_URL = "sqlite:///./myapp/app.db"
