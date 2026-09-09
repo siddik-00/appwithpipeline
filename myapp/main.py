@@ -221,7 +221,10 @@ app = FastAPI()
 
 @app.on_event("startup")
 def on_startup():
-    seed_demo_data()
+    try:
+        seed_demo_data()
+    except Exception:
+        pass
 
 
 @app.get("/", response_class=HTMLResponse)

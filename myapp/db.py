@@ -22,4 +22,7 @@ else:
 DATABASE_URL = f"sqlite:///{_DB_DIR / 'app.db'}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
-SQLModel.metadata.create_all(engine)
+try:
+    SQLModel.metadata.create_all(engine)
+except Exception:
+    pass
