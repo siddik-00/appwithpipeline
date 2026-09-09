@@ -400,4 +400,4 @@ exclude = [
 error-on-warning = true
 
 [tool.vercel]
-entrypoint = "docs_src.first_steps.tutorial001_py310:app"
+entrypoint = "myapp.main:app"
