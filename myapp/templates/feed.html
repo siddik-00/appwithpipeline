@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed - MyApp</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: #1f2937; }
+        form.post { display: flex; gap: 10px; margin-bottom: 20px; }
+        form.post input { flex: 1; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+        form.post button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .logout { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; }
+        .post-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+        .post-card .author { font-weight: bold; color: #2563eb; }
+        .post-card .time { color: #9ca3af; font-size: 12px; }
+        .post-card p { margin: 6px 0 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Feed</h1>
+        <div>
+            <span>Logged in as <strong>{{ username }}</strong></span>
+            <form method="post" action="/logout" style="display:inline;">
+                <button class="logout" type="submit">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <form class="post" method="post" action="/feed">
+        <input type="text" name="content" placeholder="What's on your mind?" required>
+        <button type="submit">Post</button>
+    </form>
+
+    {% for post in posts %}
+    <div class="post-card">
+        <span class="author">{{ post.username }}</span>
+        <span class="time">{{ post.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+        <p>{{ post.content }}</p>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;">No posts yet. Be the first to post!</p>
+    {% endfor %}
+</body>
+</html>

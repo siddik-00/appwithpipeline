@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarConnect</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #6200EE;
+            --primary-2: #8336f9;
+            --grad-brand: linear-gradient(135deg, #8364E8, #D397FA);
+            --grad-cta: linear-gradient(180deg, #6810f2, #bd8cf7);
+            --bg: #f3f4f8;
+            --card: #ffffff;
+            --text: #18181b;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --danger: #ef4444;
+            --green: #00D68F;
+            --blue: #006EFF;
+            --pink: #FF0F7B;
+            --shadow: 0 2px 12px rgba(0,0,0,.06);
+        }
+        body.dark {
+            --bg: #12101f;
+            --card: #1c1931;
+            --text: #f0eefc;
+            --muted: #a5a0bd;
+            --border: #2d2848;
+            --shadow: 0 2px 12px rgba(0,0,0,.4);
+        }
+        body {
+            font-family: -apple-system, "Segoe UI", "Inter", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background .3s, color .3s;
+        }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; cursor: pointer; }
+        .hidden { display: none !important; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: rgba(120,120,140,.3); border-radius: 8px; }
+
+        /* ---------- Header ---------- */
+        .header {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .header-inner {
+            max-width: 1180px; margin: 0 auto; padding: 10px 20px;
+            display: flex; align-items: center; gap: 16px;
+        }
+        .logo { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 900; color: var(--primary); }
+        .logo .star {
+            width: 34px; height: 34px; border-radius: 10px; background: var(--grad-brand);
+            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px;
+            box-shadow: 0 4px 10px rgba(131,100,232,.35);
+        }
+        .logo small { display: block; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: -2px; }
+        .search {
+            flex: 1; max-width: 420px; display: flex; align-items: center; gap: 8px;
+            background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 9px 16px;
+        }
+        .search input { flex: 1; border: none; background: none; outline: none; font-size: 14px; font-family: inherit; color: var(--text); }
+        .search .ico { font-style: normal; color: var(--muted); }
+        .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+            font-size: 20px; color: var(--muted); position: relative; display: flex; align-items: center; justify-content: center;
+            transition: background .2s;
+        }
+        .icon-btn:hover { background: var(--bg); }
+        .icon-btn .dot {
+            position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%;
+            background: var(--danger); border: 2px solid var(--card);
+        }
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%; color: #fff; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+            position: relative;
+        }
+        .avatar.ring { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--grad-brand), 0 0 0 4px var(--primary); }
+        .avatar .online-dot {
+            position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%;
+            background: var(--green); border: 2px solid var(--card);
+        }
+
+        /* ---------- Layout ---------- */
+        .main {
+            max-width: 1180px; margin: 0 auto; padding: 20px;
+            display: grid; grid-template-columns: 250px 1fr 300px; gap: 20px; align-items: start;
+        }
+        @media (max-width: 1000px) { .main { grid-template-columns: 1fr; } .rail { display: none; } }
+        .rail { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 14px; }
+        .card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
+        .card.pad { padding: 16px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .subview.active { animation: fadeIn .25s ease; }
+
+        /* Left rail */
+        .left-menu { padding: 10px; }
+        .menu-item {
+            display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+            border-radius: 12px; font-weight: 600; font-size: 14px; color: var(--text); width: 100%;
+            border: none; background: none; text-align: left; transition: background .15s;
+        }
+        .menu-item .mi { font-size: 20px; width: 24px; text-align: center; }
+        .menu-item:hover { background: var(--bg); }
+        .menu-item.active { background: linear-gradient(135deg, rgba(98,0,238,.1), rgba(211,151,250,.15)); color: var(--primary); }
+        .menu-item.active .mi { color: var(--primary); }
+        .menu-item .count { margin-left: auto; background: var(--pink); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+
+        /* CTA card */
+        .cta-card {
+            background: var(--grad-cta); color: #fff; padding: 24px 22px; border-radius: 16px;
+            text-align: center; box-shadow: 0 8px 24px rgba(104,16,242,.35);
+        }
+        .cta-card h3 { font-size: 19px; margin-bottom: 8px; line-height: 1.25; }
+        .cta-card p { font-size: 13px; color: rgba(255,255,255,.85); margin-bottom: 16px; line-height: 1.5; }
+        .cta-card .btn { background: #fff; color: #111; border: none; padding: 10px 20px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+
+        /* Composer */
+        .composer { padding: 14px; }
+        .composer-row { display: flex; gap: 12px; }
+        .composer textarea {
+            flex: 1; border: none; background: var(--bg); border-radius: 14px; padding: 12px 14px;
+            font-size: 15px; font-family: inherit; resize: vertical; min-height: 50px; outline: none; color: var(--text);
+        }
+        .composer textarea:focus { background: var(--bg); box-shadow: inset 0 0 0 1px var(--primary-2); }
+        .composer-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 52px; }
+        .grad-picker { display: flex; gap: 6px; }
+        .grad-swatch {
+            width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform .15s;
+        }
+        .grad-swatch:hover { transform: scale(1.15); }
+        .grad-swatch.sel { border-color: var(--card); box-shadow: 0 0 0 2px var(--primary); }
+        .update-btn { border: none; background: var(--primary); color: #fff; padding: 9px 22px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+
+        /* Stories */
+        .stories { display: flex; gap: 14px; overflow-x: auto; padding: 16px; }
+        .stories::-webkit-scrollbar { display: none; }
+        .story-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px; }
+        .story-item .s-av {
+            width: 60px; height: 60px; border-radius: 50%; padding: 3px;
+            background: var(--grad-brand); display: flex; align-items: center; justify-content: center;
+            transition: transform .15s;
+        }
+        .story-item .s-av:hover { transform: scale(1.06); }
+        .story-item .s-av .inner {
+            width: 100%; height: 100%; border-radius: 50%; background: var(--card);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .story-item .s-av .inner .avatar { width: 100%; height: 100%; font-size: 22px; }
+        .story-item .s-name { font-size: 11px; font-weight: 600; color: var(--text); max-width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .story-item .add { background: var(--grad-cta); color: #fff; font-size: 28px; font-weight: 300; }
+
+        /* Story modal */
+        .story-overlay {
+            position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.85);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .story-modal {
+            width: 100%; max-width: 420px; height: 70vh; border-radius: 20px; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; color: #fff; text-align: center;
+        }
+        .story-modal .s-a { margin-bottom: 14px; }
+        .story-modal .s-text { font-size: 20px; font-weight: 800; line-height: 1.4; }
+        .story-modal .s-close {
+            position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%;
+            background: rgba(255,255,255,.25); border: none; color: #fff; font-size: 18px;
+        }
+        .story-add-form { padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+
+        /* Post card */
+        .post-card { padding: 16px 18px; }
+        .post-head { display: flex; gap: 12px; align-items: center; }
+        .post-head .avatar { width: 46px; height: 46px; font-size: 17px; }
+        .post-meta { flex: 1; }
+        .post-meta .name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 5px; }
+        .post-meta .time { color: var(--muted); font-size: 12px; margin-top: 1px; }
+        .verify {
+            display: inline-flex; width: 16px; height: 16px; border-radius: 50%; background: var(--primary);
+            color: #fff; font-size: 10px; align-items: center; justify-content: center; font-weight: 900;
+        }
+        .online-chip { font-size: 10px; font-weight: 600; color: var(--green); }
+        .post-text { margin: 12px 6px 0; font-size: 15px; line-height: 1.5; }
+        .post-grad {
+            margin: 12px 6px 0; height: 180px; border-radius: 14px; position: relative;
+            display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px;
+            background-size: cover;
+        }
+        .post-grad .emoji { position: absolute; top: 10px; right: 14px; font-size: 22px; }
+        .social-bar { display: flex; margin-top: 12px; border: 1px solid var(--border); border-radius: 14px; padding: 5px; }
+        .soc {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 8px; border: none; background: none; border-radius: 10px;
+            color: var(--muted); font-weight: 600; font-size: 13px; transition: background .15s; position: relative;
+        }
+        .soc:hover { background: var(--bg); }
+        .soc.liked[data-reaction="like"] { color: var(--primary); }
+        .soc.liked[data-reaction="love"] { color: var(--danger); }
+        .soc.liked[data-reaction="celebrate"] { color: #f59e0b; }
+        .soc.saved { color: var(--primary); }
+        .soc i { font-style: normal; font-size: 18px; }
+        .react-pop {
+            position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) scale(.8);
+            background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 8px;
+            display: none; gap: 4px; z-index: 20; box-shadow: var(--shadow); white-space: nowrap;
+        }
+        .soc .react-pop.show { display: flex; animation: popup .15s ease forwards; }
+        @keyframes popup { to { transform: translateX(-50%) scale(1); } }
+        .react-pop button { border: none; background: none; font-size: 20px; padding: 2px; }
+        .react-pop button:hover { transform: scale(1.3); }
+
+        /* Comments */
+        .comments { padding: 2px 18px 16px; }
+        .comment-input { display: flex; gap: 10px; margin-top: 10px; }
+        .comment-input input {
+            flex: 1; padding: 10px 16px; border: 1px solid var(--border); background: var(--bg);
+            border-radius: 999px; font-size: 14px; font-family: inherit; outline: none; color: var(--text);
+        }
+        .comment-input input:focus { border-color: var(--primary-2); }
+        .comment-item { display: flex; gap: 10px; margin-top: 12px; }
+        .comment-item .avatar { width: 32px; height: 32px; font-size: 12px; }
+        .comment-bubble { background: var(--bg); border-radius: 14px; padding: 8px 14px; font-size: 14px; }
+        .comment-bubble .n { font-weight: 700; }
+        .comment-bubble .t { color: var(--muted); font-size: 11px; margin-left: 8px; font-weight: 400; }
+
+        /* Right rail */
+        .rail-title { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; padding: 14px 16px 6px; }
+        .person { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
+        .person:first-of-type { border-top: none; }
+        .person .info { flex: 1; min-width: 0; }
+        .person .info .name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 4px; }
+        .person .info .sub { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pill-btn { border: none; padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+        .pill-btn.primary { background: var(--primary); color: #fff; }
+        .pill-btn.ghost { background: var(--bg); color: var(--primary); }
+        .trend-item { display: flex; flex-direction: column; padding: 10px 16px; border-top: 1px solid var(--border); cursor: pointer; }
+        .trend-item:first-of-type { border-top: none; }
+        .trend-item:hover { background: var(--bg); }
+        .trend-item .tag { font-weight: 700; font-size: 14px; color: var(--primary); }
+        .trend-item .count { font-size: 12px; color: var(--muted); }
+
+        /* Notification */
+        .notif { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+        .notif:last-child { border-bottom: none; }
+        .notif .ico { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; color: #fff; flex-shrink: 0; }
+        .notif .n-body { flex: 1; font-size: 14px; }
+        .notif .n-time { color: var(--muted); font-size: 11px; }
+
+        /* Profile */
+        .profile-cover { height: 140px; position: relative; }
+        .profile-avatar-wrap { position: absolute; bottom: -34px; left: 24px; }
+        .profile-info { padding: 44px 20px 16px; }
+        .profile-info h2 { font-size: 22px; display: flex; align-items: center; gap: 8px; }
+        .profile-info .p-user { color: var(--muted); font-size: 14px; }
+        .profile-info .p-bio { margin-top: 8px; font-size: 14px; color: var(--text); }
+        .stats-row { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border); }
+        .stat-box { flex: 1; text-align: center; padding: 10px; background: var(--bg); border-radius: 12px; }
+        .stat-box .num { font-size: 20px; font-weight: 800; color: var(--primary); }
+        .stat-box .lbl { font-size: 11px; color: var(--muted); }
+        .edit-area { padding: 16px 20px 20px; border-top: 1px solid var(--border); }
+        .edit-area input, .edit-area textarea {
+            width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+            font-size: 14px; font-family: inherit; margin-bottom: 10px; background: var(--bg); color: var(--text);
+        }
+
+        /* Auth */
+        .auth-screen {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+            background: var(--grad-cta); position: relative; overflow: hidden;
+        }
+        .auth-screen .bg-star {
+            position: absolute; color: rgba(255,255,255,.12); font-size: 80px; animation: float 8s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .auth-card { width: 100%; max-width: 410px; background: var(--card); border-radius: 20px; padding: 32px; box-shadow: 0 24px 70px rgba(0,0,0,.3); position: relative; z-index: 2; }
+        .auth-card .logo { justify-content: center; margin-bottom: 6px; }
+        .auth-card .logo .star { width: 48px; height: 48px; font-size: 28px; border-radius: 14px; }
+        .auth-card .logo small { text-align: center; }
+        .auth-card h2 { text-align: center; font-size: 24px; margin-bottom: 4px; }
+        .auth-card .sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+        .demo-box {
+            background: linear-gradient(135deg, rgba(98,0,238,.06), rgba(211,151,250,.12));
+            border: 1px dashed #c0abf0; border-radius: 12px; padding: 12px; margin-bottom: 16px;
+        }
+        .demo-box .db { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-align: center; }
+        .demo-users { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .demo-user {
+            border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 5px 12px 5px 5px;
+            font-size: 12px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px;
+        }
+        .demo-user .avatar { width: 22px; height: 22px; font-size: 9px; }
+        .tabs { display: flex; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 18px; }
+        .tab { flex: 1; padding: 9px; border: none; background: none; border-radius: 9px; font-weight: 700; color: var(--muted); font-size: 14px; }
+        .tab.active { background: var(--card); color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+        .form-group { margin-bottom: 12px; }
+        .form-group input {
+            width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 15px;
+            background: var(--card); color: var(--text);
+        }
+        .form-group input:focus { outline: none; border-color: var(--primary-2); }
+        .btn-primary {
+            width: 100%; padding: 13px; border: none; border-radius: 999px; background: var(--grad-brand);
+            color: #fff; font-size: 15px; font-weight: 800; box-shadow: 0 6px 16px rgba(98,0,238,.3);
+        }
+        .btn-primary:active { transform: scale(.98); }
+        .msg { padding: 11px; border-radius: 10px; margin-bottom: 14px; font-size: 13px; display: none; }
+        .msg.error { background: #fee2e2; color: #b91c1c; display: block; }
+        .msg.success { background: #d1fae5; color: #065f46; display: block; }
+
+        /* Bottom mobile nav */
+        .bottomnav {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: var(--card); border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around;
+        }
+        .bn-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            padding: 9px 0 8px; border: none; background: none; color: var(--muted);
+            font-size: 11px; font-weight: 600; border-top: 2px solid transparent; font-family: inherit;
+        }
+        .bn-item .bi { font-size: 22px; line-height: 1; }
+        .bn-item.active { color: var(--primary); border-top-color: var(--primary); }
+        .bn-item .badge { background: var(--danger); color: #fff; font-size: 9px; font-weight: 700; border-radius: 999px; padding: 0 5px; }
+        .bn-item .bwrap { position: relative; }
+        @media (min-width: 1000px) { .bottomnav { display: none; } }
+        .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
+        .section-title { font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 4px 2px 12px; }
+        .feed-col { max-width: 620px; min-width: 0; }
+
+        /* Search results */
+        .sr-btn {
+            position: absolute; right: 0; top: 0; bottom: 0; margin: auto; border: none; background: var(--grad-brand);
+            color: #fff; font-weight: 700; padding: 0 16px; border-radius: 0 999px 999px 0; font-size: 13px;
+        }
+        .search-wrap { position: relative; flex: 1; max-width: 420px; }
+
+        /* Toggle */
+        .theme-toggle { background: var(--bg); border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH -->
+    <div id="view-auth" class="auth-screen">
+        <span class="bg-star" style="top:10%; left:8%;">&#9733;</span>
+        <span class="bg-star" style="bottom:15%; right:10%; animation-delay:2s; font-size:50px;">&#9733;</span>
+        <span class="bg-star" style="top:60%; left:15%; animation-delay:4s; font-size:40px;">&#9733;</span>
+        <div class="auth-card">
+            <div class="logo">
+                <div class="star">&#9733;</div>
+                <div>StarConnect<small>Connect &middot; Share &middot; Inspire</small></div>
+            </div>
+            <h2>Welcome</h2>
+            <p class="sub">Join our growing community</p>
+            <div id="msg" class="msg"></div>
+
+            <div class="demo-box">
+                <div class="db">Try a demo account (password: <b>demo123</b>)</div>
+                <div class="demo-users" id="demoUsers"></div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" id="tabLogin">Login</button>
+                <button class="tab" id="tabSignup">Sign Up</button>
+            </div>
+            <form id="loginForm">
+                <div class="form-group"><input type="text" id="loginUsername" placeholder="Username" required autocomplete="username"></div>
+                <div class="form-group"><input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password"></div>
+                <button class="btn-primary" type="submit">Login</button>
+            </form>
+            <form id="signupForm" class="hidden">
+                <div class="form-group"><input type="text" id="signupName" placeholder="Full name (optional)"></div>
+                <div class="form-group"><input type="text" id="signupUsername" placeholder="Username" required autocomplete="username"></div>
+                <div class="form-group"><input type="password" id="signupPassword" placeholder="Password" required autocomplete="new-password"></div>
+                <button class="btn-primary" type="submit">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div id="view-app" class="hidden">
+        <header class="header">
+            <div class="header-inner">
+                <div class="logo"><div class="star">&#9733;</div><div>StarConnect<small>Social for you</small></div></div>
+                <div class="search-wrap">
+                    <div class="search"><span class="ico">&#128269;</span><input type="text" id="searchBox" placeholder="Search users or posts..."></div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn theme-toggle" id="themeBtn" title="Toggle theme">&#127769;</button>
+                    <button class="icon-btn" id="navHome" title="Home">&#127968;</button>
+                    <button class="icon-btn" id="navNotifyT" title="Alerts">&#128276;<span class="dot hidden" id="headerDot"></span></button>
+                    <div class="avatar" id="hAvatar" style="cursor:pointer"></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main">
+            <!-- LEFT RAIL -->
+            <aside class="rail">
+                <div class="card"><div class="left-menu" id="leftMenu"></div></div>
+                <div class="cta-card">
+                    <h3>Unlock your <span style="font-weight:900;">earning potential</span></h3>
+                    <p>Get expert advice, connect with verified mentors, and grow together.</p>
+                    <button class="btn">Start Earning Today</button>
+                </div>
+            </aside>
+
+            <!-- CENTER -->
+            <div class="feed-col">
+                <div class="card hidden" id="searchResults" style="margin-bottom:14px;"></div>
+                <div id="view-home" class="subview active">
+                    <div class="card">
+                        <div class="composer hidden" id="composerCard">
+                            <div class="composer-row">
+                                <div class="avatar" id="cAvatar" style="margin-top:4px;"></div>
+                                <textarea id="composeText" placeholder="Share a thought with your community..."></textarea>
+                            </div>
+                            <div class="composer-footer">
+                                <div class="grad-picker" id="gradPicker"></div>
+                                <button class="update-btn" id="composeBtn">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-bottom:14px;">
+                        <div class="stories" id="storiesRow"></div>
+                        <div class="story-add-form hidden" id="storyAddForm">
+                            <input type="text" id="storyText" placeholder="Share a quick update..." style="flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:999px; background:var(--bg); color:var(--text); outline:none;">
+                            <button class="pill-btn primary" id="storyAddBtn">Add Story</button>
+                        </div>
+                    </div>
+                    <div class="card" id="feedList"></div>
+                </div>
+
+                <div id="view-notify" class="subview hidden">
+                    <div class="section-title">Notifications</div>
+                    <div class="card" id="notifyList"></div>
+                </div>
+
+                <div id="view-bookmarks" class="subview hidden">
+                    <div class="section-title">Saved Posts</div>
+                    <div class="card" id="bookmarkList"></div>
+                </div>
+
+                <div id="view-profile" class="subview hidden">
+                    <div class="card">
+                        <div class="profile-cover" id="pCover">
+                            <div class="profile-avatar-wrap"><div class="avatar" id="pAvatar" style="width:72px;height:72px;font-size:26px;border:4px solid var(--card)"></div></div>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="pName">-</h2>
+                            <div class="p-user" id="pUsername">@-</div>
+                            <div class="p-bio" id="pBio"></div>
+                        </div>
+                        <div class="stats-row">
+                            <div class="stat-box"><div class="num" id="pPosts">0</div><div class="lbl">Posts</div></div>
+                            <div class="stat-box"><div class="num" id="pFollowers">0</div><div class="lbl">Followers</div></div>
+                            <div class="stat-box"><div class="num" id="pFollowing">0</div><div class="lbl">Following</div></div>
+                        </div>
+                        <div style="padding:0 20px 16px; display:flex; gap:8px;">
+                            <button class="pill-btn primary" id="editBtn">Edit Profile</button>
+                        </div>
+                        <div class="edit-area hidden" id="editCard">
+                            <input type="text" id="editName" placeholder="Full name">
+                            <textarea id="editBio" placeholder="Bio" rows="3"></textarea>
+                            <button class="pill-btn primary" id="saveProfile">Save Profile</button>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;"><div class="section-title">My Posts</div><div class="card" id="myPosts"></div></div>
+                </div>
+            </div>
+
+            <!-- RIGHT RAIL -->
+            <aside class="rail">
+                <div class="card">
+                    <div class="rail-title">Trending</div>
+                    <div id="trendList"></div>
+                </div>
+                <div class="card">
+                    <div class="rail-title">Suggested for you</div>
+                    <div id="peopleList"></div>
+                </div>
+                <div class="card">
+                    <div class="rail-title">Your Connections</div>
+                    <div id="connectionList"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Story Modal -->
+    <div id="storyOverlay" class="story-overlay hidden" onclick="if(event.target===this)closeStory()">
+        <div class="story-modal" id="storyModal">
+            <button class="s-close" onclick="closeStory()">&#10005;</button>
+            <div class="s-a" id="storyAuthor"></div>
+            <div class="s-text" id="storyText2"></div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAV (Mobile) -->
+    <div class="bottomnav hidden" id="bottomNav">
+        <button class="bn-item active" data-bn="home"><span class="bi">&#127968;</span>Home</button>
+        <button class="bn-item" data-bn="connect"><span class="bi">&#128101;</span>Connect</button>
+        <button class="bn-item" data-bn="post"><span class="bi">&#10133;</span>Post</button>
+        <button class="bn-item" data-bn="notify"><span class="bwrap"><span class="bi">&#128276;</span><span class="badge hidden" id="bnBadge">0</span></span>Alerts</button>
+        <button class="bn-item" data-bn="profile"><span class="bi">&#128100;</span>Profile</button>
+    </div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+        let state = { user: null, view: "home", grads: [
+            "linear-gradient(135deg,#6200EE,#D397FA)",
+            "linear-gradient(135deg,#FF0F7B,#F89B29)",
+            "linear-gradient(135deg,#006EFF,#00D68F)",
+            "linear-gradient(135deg,#8B5CF6,#EC4899)",
+            "linear-gradient(135deg,#F59E0B,#EF4444)",
+        ] };
+
+        function setCookie(n, v, d) { const x = new Date(); x.setTime(x.getTime() + (d||7)*86400000); document.cookie = n + "=" + v + "; expires=" + x.toUTCString() + "; path=/"; }
+        function deleteCookie(n) { document.cookie = n + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; }
+
+        function showMsg(t, type) { const el = $("msg"); el.textContent = t; el.className = "msg " + (type||"error"); setTimeout(() => { el.className = "msg"; }, 3500); }
+
+        async function api(url, method, body) {
+            const opts = { method, headers: {} };
+            if (body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+            const res = await fetch(url, opts);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || "Something went wrong");
+            return data;
+        }
+
+        function esc(s) { return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+        function avHtml(u, cls) {
+            const ch = (u && u.name ? u.name[0] : "?").toUpperCase();
+            return `<div class="avatar ${cls || ""}" style="background:${u ? u.avatar_color : "#6200EE"}">${ch}${u && u.online ? '<span class="online-dot"></span>' : ""}</div>`;
+        }
+        function verifyHtml(u) { return u && u.verified ? `<span class="verify">&#10003;</span>` : ""; }
+
+        // ---------- AUTH ----------
+        $("tabLogin").onclick = () => { $("tabLogin").classList.add("active"); $("tabSignup").classList.remove("active"); $("loginForm").classList.remove("hidden"); $("signupForm").classList.add("hidden"); };
+        $("tabSignup").onclick = () => { $("tabSignup").classList.add("active"); $("loginForm").classList.remove("active"); $("loginForm").classList.add("hidden"); $("signupForm").classList.remove("hidden"); };
+
+        async function doLogin(username, password) {
+            try {
+                const d = await api("/api/auth/login", "POST", { username, password });
+                setCookie("session_token", d.token);
+                showApp(d.user);
+            } catch (err) { showMsg(err.message); }
+        }
+
+        $("loginForm").onsubmit = e => { e.preventDefault(); doLogin($("loginUsername").value, $("loginPassword").value); };
+        $("signupForm").onsubmit = async e => {
+            e.preventDefault();
+            try {
+                const d = await api("/api/auth/signup", "POST", { name: $("signupName").value, username: $("signupUsername").value, password: $("signupPassword").value });
+                setCookie("session_token", d.token); showApp(d.user);
+            } catch (err) { showMsg(err.message); }
+        };
+
+        const DEMO = [
+            { u: "masud", n: "Masud", c: "#6200EE" },
+            { u: "nusrat", n: "Nusrat", c: "#FF0F7B" },
+            { u: "tanvir", n: "Tanvir", c: "#006EFF" },
+            { u: "sadia", n: "Sadia", c: "#00D68F" },
+        ];
+        $("demoUsers").innerHTML = DEMO.map(d =>
+            `<button class="demo-user" onclick="doLogin('${d.u}','demo123')">${avHtml({name:d.n, avatar_color:d.c}, "")}${d.n}</button>`).join("");
+
+        // theme
+        const savedTheme = localStorage.getItem("theme") || "light";
+        if (savedTheme === "dark") document.body.classList.add("dark");
+        $("themeBtn").onclick = () => {
+            document.body.classList.toggle("dark");
+            localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+        };
+
+        // ---------- APP ----------
+        const MENU = [
+            { key: "home", ico: "&#127968;", label: "Home" },
+            { key: "bookmarks", ico: "&#128278;", label: "Saved" },
+            { key: "notify", ico: "&#128276;", label: "Notifications", countId: "menuNotifCount" },
+            { key: "profile", ico: "&#128100;", label: "My Profile" },
+            { key: "logout", ico: "&#8594;", label: "Logout" },
+        ];
+
+        function showApp(user) {
+            state.user = user;
+            $("view-auth").classList.add("hidden");
+            $("view-app").classList.remove("hidden");
+            $("bottomNav").classList.remove("hidden");
+            const ah = (user.name || "?")[0].toUpperCase();
+            $("hAvatar").style.background = user.avatar_color;
+            $("hAvatar").textContent = ah;
+            $("cAvatar").style.background = user.avatar_color;
+            $("cAvatar").textContent = ah;
+            initGradPicker();
+            changeView("home");
+            loadAll();
+        }
+
+        function renderMenu() {
+            const unreadBadge = state.unread || 0;
+            $("leftMenu").innerHTML = MENU.map(m => {
+                const count = m.key === "notify" && unreadBadge > 0 ? `<span class="count">${unreadBadge}</span>` : "";
+                return `<button class="menu-item ${state.view === m.key && m.key !== "logout" ? "active" : ""}" data-m="${m.key}"><span class="mi">${m.ico}</span>${m.label}${count}</button>`;
+            }).join("");
+            document.querySelectorAll("[data-m]").forEach(b => {
+                b.onclick = () => {
+                    const k = b.dataset.m;
+                    if (k === "logout") { doLogout(); return; }
+                    changeView(k);
+                };
+            });
+        }
+
+        function changeView(name) {
+            if (name === "connect") name = "home";
+            state.view = name;
+            document.querySelectorAll(".subview").forEach(v => v.classList.remove("active"));
+            if (name === "home") $("view-home").classList.add("active");
+            if (name === "notify") { $("view-notify").classList.add("active"); loadNotifications(); }
+            if (name === "bookmarks") { $("view-bookmarks").classList.add("active"); loadBookmarks(); }
+            if (name === "profile") { $("view-profile").classList.add("active"); loadMe(); }
+            $("composerCard").parentElement.classList.toggle("hidden", name !== "home");
+            $("searchResults").classList.add("hidden");
+            if (name === "home") renderStories();
+            renderMenu();
+            document.querySelectorAll(".bn-item").forEach(b => b.classList.toggle("active", b.dataset.bn === name));
+        }
+
+        document.querySelectorAll(".bn-item").forEach(b => {
+            b.onclick = () => {
+                const k = b.dataset.bn;
+                if (k === "post") {
+                    changeView("home");
+                    $("composeText").focus();
+                    return;
+                }
+                changeView(k);
+            };
+        });
+
+        $("navHome").onclick = () => changeView("home");
+        $("navNotifyT").onclick = () => changeView("notify");
+        $("hAvatar").onclick = () => changeView("profile");
+
+        async function doLogout() {
+            try { await api("/api/auth/logout", "POST"); } catch (e) {}
+            deleteCookie("session_token");
+            location.reload();
+        }
+
+        // ---------- Gradients ----------
+        let selGrad = state.grads[0];
+        function initGradPicker() {
+            $("gradPicker").innerHTML = state.grads.map((g, i) =>
+                `<div class="grad-swatch ${i===0?"sel":""}" data-g="${esc(g)}" style="background:${g}"></div>`).join("");
+            document.querySelectorAll(".grad-swatch").forEach(s => {
+                s.onclick = () => {
+                    selGrad = s.dataset.g;
+                    document.querySelectorAll(".grad-swatch").forEach(x => x.classList.remove("sel"));
+                    s.classList.add("sel");
+                };
+            });
+        }
+
+        // ---------- Composer ----------
+        $("composeText").addEventListener("keydown", e => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); postIt(); }
+        });
+        $("composeBtn").onclick = postIt;
+        async function postIt() {
+            const text = $("composeText").value.trim();
+            if (!text) return;
+            try {
+                await api("/api/posts", "POST", { content: text, gradient: selGrad });
+                $("composeText").value = "";
+                loadFeed(); loadMe(); renderStories();
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---------- Stories ----------
+        async function renderStories() {
+            try {
+                const d = await api("/api/stories", "GET");
+                const me = state.user;
+                const addBtn = `
+                    <div class="story-item" onclick="toggleStoryForm()">
+                        <div class="s-av"><div class="inner"><div class="avatar add" style="background:var(--grad-cta);color:#fff;">+</div></div></div>
+                        <div class="s-name">Your Story</div>
+                    </div>`;
+                const items = d.stories.map(s => `
+                    <div class="story-item" onclick="openStory(${s.id})">
+                        <div class="s-av"><div class="inner">${avHtml(s.author, "")}</div></div>
+                        <div class="s-name">${esc(s.author.name)}</div>
+                    </div>`).join("");
+                $("storiesRow").innerHTML = addBtn + items;
+                window.__stories = d.stories;
+            } catch (e) {}
+        }
+        function toggleStoryForm() { $("storyAddForm").classList.toggle("hidden"); }
+        $("storyAddBtn").onclick = async () => {
+            const text = $("storyText").value.trim();
+            if (!text) return;
+            try {
+                await api("/api/stories", "POST", { content: text, gradient: selGrad });
+                $("storyText").value = "";
+                $("storyAddForm").classList.add("hidden");
+                renderStories();
+            } catch (e) { alert(e.message); }
+        };
+        function openStory(id) {
+            const s = (window.__stories || []).find(x => x.id === id);
+            if (!s) return;
+            $("storyModal").style.background = s.gradient;
+            $("storyAuthor").innerHTML = `<div class="s-a" style="font-weight:700;display:flex;gap:8px;align-items:center;">${avHtml(s.author, "")} ${esc(s.author.name)}${verifyHtml(s.author)}</div>`;
+            $("storyText2").textContent = s.content;
+            $("storyOverlay").classList.remove("hidden");
+        }
+        function closeStory() { $("storyOverlay").classList.add("hidden"); }
+
+        // ---------- Search ----------
+        let searchTimer;
+        $("searchBox").addEventListener("input", () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(doSearch, 350);
+        });
+        async function doSearch() {
+            const q = $("searchBox").value.trim();
+            const box = $("searchResults");
+            if (!q) { box.classList.add("hidden"); return; }
+            try {
+                const d = await api("/api/search?q=" + encodeURIComponent(q), "GET");
+                if (!d.results.length) { box.innerHTML = `<div class="empty">No results for "${esc(q)}"</div>`; box.classList.remove("hidden"); return; }
+                box.innerHTML = `<div class="section-title" style="margin:12px 14px 0;">Search Results</div>` + d.results.map(r => {
+                    if (r.type === "user") {
+                        return `<div class="person">${avHtml(r)}<div class="info"><div class="name">${esc(r.name)}${verifyHtml(r)}</div><div class="sub">@${esc(r.username)}</div></div></div>`;
+                    }
+                    return `<div class="post-card" style="padding:12px 14px;"><div class="post-meta"><div class="name">${esc(r.author.name)}${verifyHtml(r.author)}</div><div class="time">${r.time}</div></div><div class="post-text">${esc(r.content)}</div></div>`;
+                }).join("");
+                box.classList.remove("hidden");
+            } catch (e) {}
+        }
+
+        // ---------- Feed ----------
+        async function loadFeed() {
+            try {
+                const d = await api("/api/feed", "GET");
+                $("feedList").innerHTML = d.posts.length
+                    ? d.posts.map(postCard).join("")
+                    : `<div class="empty">No posts yet. Be the first!</div>`;
+            } catch (e) { $("feedList").innerHTML = `<div class="empty">Could not load feed</div>`; }
+        }
+
+        function postCard(p) {
+            const comments = p.comments.map(c => `
+                <div class="comment-item">
+                    ${avHtml(c.author, "")}
+                    <div class="comment-bubble"><span class="n">${esc(c.author.name)}${verifyHtml(c.author)}</span><span class="t">${c.time}</span><br>${esc(c.content)}</div>
+                </div>`).join("");
+            const reactIcon = p.reaction === "love" ? "&#10084;&#65039;" : p.reaction === "celebrate" ? "&#127881;" : "&#128077;";
+            return `
+            <div class="post-card" id="post-${p.id}">
+                <div class="post-head">
+                    ${avHtml(p.author, p.author.online ? "ring" : "")}
+                    <div class="post-meta">
+                        <div class="name">${esc(p.author.name)}${verifyHtml(p.author)}</div>
+                        <div class="time">@${esc(p.author.username)} &middot; ${p.time}</div>
+                    </div>
+                </div>
+                <div class="post-text">${esc(p.content)}</div>
+                <div class="post-grad" style="background:${p.gradient}">
+                    <span class="emoji">&#9733;</span>
+                </div>
+                <div class="social-bar">
+                    <button class="soc ${p.liked ? "liked" : ""}" data-reaction="${p.reaction || "like"}" onclick="toggleReact(${p.id}, this, 'like')">
+                        <i>&#128077;</i> <span>${p.like_count}</span>
+                        <span class="react-pop" onclick="event.stopPropagation()">
+                            <button onclick="react(${p.id}, 'like')">&#128077;</button>
+                            <button onclick="react(${p.id}, 'love')">&#10084;&#65039;</button>
+                            <button onclick="react(${p.id}, 'celebrate')">&#127881;</button>
+                        </span>
+                    </button>
+                    <button class="soc" onclick="focusComment(${p.id})"><i>&#128172;</i> ${p.comments.length} Comments</button>
+                    <button class="soc ${p.bookmarked ? "saved" : ""}" onclick="toggleBookmark(${p.id}, this)">${p.bookmarked ? "&#128278; Saved" : "&#128204; Save"}</button>
+                </div>
+                <div class="comments">
+                    <div class="comment-input">
+                        ${avHtml(p.author, "")}
+                        <input id="cin-${p.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(${p.id})">
+                    </div>
+                    <div id="clist-${p.id}">${comments}</div>
+                </div>
+            </div>`;
+        }
+
+        function focusComment(id) { const el = $("cin-" + id); if (el) el.focus(); }
+
+        function toggleReact(id, btn, r) {
+            document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
+            btn.querySelector(".react-pop").classList.toggle("show");
+        }
+        document.addEventListener("click", e => {
+            if (!e.target.closest(".soc")) document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
+        });
+
+        async function react(id, reaction) {
+            try {
+                const d = await api("/api/posts/" + id + "/like", "POST", { reaction });
+                const btn = document.querySelectorAll(`#post-${id} .soc`)[0];
+                btn.classList.toggle("liked", d.liked);
+                btn.dataset.reaction = d.liked ? d.reaction : "like";
+                btn.innerHTML = `<i>${d.liked ? (d.reaction === "love" ? "&#10084;&#65039;" : d.reaction === "celebrate" ? "&#127881;" : "&#128077;") : "&#128077;"}</i> <span>${d.like_count}</span>
+                    <span class="react-pop" onclick="event.stopPropagation()">
+                        <button onclick="react(${id}, 'like')">&#128077;</button>
+                        <button onclick="react(${id}, 'love')">&#10084;&#65039;</button>
+                        <button onclick="react(${id}, 'celebrate')">&#127881;</button>
+                    </span>`;
+            } catch (e) { alert(e.message); }
+        }
+
+        async function toggleBookmark(id, btn) {
+            try {
+                const d = await api("/api/posts/" + id + "/bookmark", "POST");
+                btn.classList.toggle("saved", d.bookmarked);
+                btn.innerHTML = d.bookmarked ? "&#128278; Saved" : "&#128204; Save";
+            } catch (e) { alert(e.message); }
+        }
+
+        async function addComment(id) {
+            const input = $("cin-" + id); const content = input.value.trim();
+            if (!content) return;
+            try {
+                const c = await api("/api/posts/" + id + "/comments", "POST", { content });
+                $("clist-" + id).insertAdjacentHTML("beforeend",
+                    `<div class="comment-item">${avHtml(c.author, "")}<div class="comment-bubble"><span class="n">${esc(c.author.name)}${verifyHtml(c.author)}</span><span class="t">${c.time}</span><br>${esc(c.content)}</div></div>`);
+                input.value = "";
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---------- Bookmarks ----------
+        async function loadBookmarks() {
+            try {
+                const d = await api("/api/bookmarks", "GET");
+                $("bookmarkList").innerHTML = d.posts.length
+                    ? d.posts.map(postCard).join("")
+                    : `<div class="empty">No saved posts yet. Tap &#128204; on any post!</div>`;
+            } catch (e) { $("bookmarkList").innerHTML = `<div class="empty">Could not load</div>`; }
+        }
+
+        // ---------- Trending / Suggested / Connections ----------
+        async function loadAll() { loadFeed(); loadTrending(); loadSuggested(); loadConnections(); loadMe(); renderStories(); }
+
+        async function loadTrending() {
+            try {
+                const d = await api("/api/trending", "GET");
+                $("trendList").innerHTML = d.topics.map(t =>
+                    `<div class="trend-item" onclick="$('searchBox').value='${esc(t.tag)}';doSearch()"><span class="tag">${esc(t.tag)}</span><span class="count">${esc(t.posts)}</span></div>`).join("");
+            } catch (e) {}
+        }
+
+        async function loadSuggested() {
+            try {
+                const d = await api("/api/users", "GET");
+                $("peopleList").innerHTML = d.users.length
+                    ? d.users.map(u => personHtml(u, "suggested")).join("")
+                    : `<div class="empty">No users yet</div>`;
+            } catch (e) {}
+        }
+        async function loadConnections() {
+            try {
+                const d = await api("/api/connections", "GET");
+                $("connectionList").innerHTML = d.users.length
+                    ? d.users.map(u => `<div class="person">${avHtml(u, u.online ? "ring" : "")}<div class="info"><div class="name">${esc(u.name)}${verifyHtml(u)}</div><div class="sub">@${esc(u.username)} ${u.online ? '<span class="online-chip">&#9679; online</span>' : ""}</div></div></div>`).join("")
+                    : `<div class="empty" style="padding:20px;">No connections yet</div>`;
+            } catch (e) {}
+        }
+        function personHtml(u, kind) {
+            const stateBtn = kind === "suggested"
+                ? `<button class="pill-btn ${u.following ? "ghost" : "primary"}" onclick="toggleFollow(${u.id}, this)">${u.following ? "Following" : "+ Follow"}</button>`
+                : "";
+            return `<div class="person">${avHtml(u, u.online ? "ring" : "")}<div class="info"><div class="name">${esc(u.name)}${verifyHtml(u)}</div><div class="sub">@${esc(u.username)} &middot; ${u.post_count} posts</div></div>${stateBtn}</div>`;
+        }
+        async function toggleFollow(id, btn) {
+            try {
+                const d = await api("/api/users/" + id + "/follow", "POST");
+                btn.className = "pill-btn " + (d.following ? "ghost" : "primary");
+                btn.textContent = d.following ? "Following" : "+ Follow";
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---------- Notifications ----------
+        async function loadNotifications() {
+            try {
+                const d = await api("/api/notifications", "GET");
+                const icoFor = t => t.includes("like") ? "#FF0F7B" : t.includes("comment") ? "#006EFF" : "#00D68F";
+                const glyFor = t => t.includes("like") ? "&#128077;" : t.includes("comment") ? "&#128172;" : "&#128101;";
+                $("notifyList").innerHTML = d.notifications.length
+                    ? d.notifications.map(n => `
+                        <div class="notif">
+                            <div class="ico" style="background:${icoFor(n.type)}">${glyFor(n.type)}</div>
+                            <div class="n-body">${esc(n.message)}</div>
+                            <div class="n-time">${n.time}</div>
+                        </div>`).join("")
+                    : `<div class="empty">No notifications yet</div>`;
+                $("headerDot").classList.add("hidden");
+                $("bnBadge").classList.add("hidden");
+                state.unread = 0; renderMenu();
+                await api("/api/notifications/read", "POST");
+            } catch (e) {}
+        }
+
+        // ---------- Profile ----------
+        async function loadMe() {
+            try {
+                const d = await api("/api/me", "GET");
+                if (!d.user) return;
+                state.unread = d.unread || 0;
+                if (state.unread > 0) {
+                    $("headerDot").classList.remove("hidden");
+                    $("bnBadge").textContent = state.unread; $("bnBadge").classList.remove("hidden");
+                }
+                const u = d.user;
+                $("pAvatar").style.background = u.avatar_color;
+                $("pAvatar").textContent = (u.name || "?")[0].toUpperCase();
+                $("pCover").style.background = "linear-gradient(120deg," + u.avatar_color + ", #D397FA)";
+                $("pName").innerHTML = esc(u.name) + verified(u);
+                $("pUsername").textContent = "@" + u.username;
+                $("pBio").textContent = u.bio || "No bio yet.";
+                $("pPosts").textContent = d.posts;
+                $("pFollowers").textContent = d.followers;
+                $("pFollowing").textContent = d.following;
+                $("editName").value = u.name || "";
+                $("editBio").value = u.bio || "";
+                const posts = await api("/api/users/" + u.id + "/posts", "GET");
+                $("myPosts").innerHTML = posts.posts.length
+                    ? posts.posts.map(postCard).join("")
+                    : `<div class="empty">No posts yet</div>`;
+            } catch (e) {}
+        }
+        function verified(u) { return u.verified ? `<span class="verify">&#10003;</span>` : ""; }
+
+        $("editBtn").onclick = () => $("editCard").classList.toggle("hidden");
+        $("saveProfile").onclick = async () => {
+            try {
+                await api("/api/profile", "POST", { name: $("editName").value, bio: $("editBio").value });
+                $("editCard").classList.add("hidden");
+                loadMe();
+            } catch (e) { alert(e.message); }
+        };
+
+        // ---------- INIT ----------
+        (async () => {
+            try {
+                const d = await api("/api/me", "GET");
+                if (d.user) { showApp(d.user); } else { $("view-auth").classList.remove("hidden"); }
+            } catch (e) { $("view-auth").classList.remove("hidden"); }
+        })();
+    </script>
+</body>
+</html>
