@@ -364,7 +364,7 @@
             <div id="msg" class="msg"></div>
 
             <div class="demo-box">
-                <div class="db">Try a demo account (password: <b>demo123</b>)</div>
+                <div class="db">Try a demo account (password: <b>starconnect</b>)</div>
                 <div class="demo-users" id="demoUsers"></div>
             </div>
 
@@ -573,7 +573,7 @@
             { u: "sadia", n: "Sadia", c: "#00D68F" },
         ];
         $("demoUsers").innerHTML = DEMO.map(d =>
-            `<button class="demo-user" onclick="doLogin('${d.u}','demo123')">${avHtml({name:d.n, avatar_color:d.c}, "")}${d.n}</button>`).join("");
+            `<button class="demo-user" onclick="doLogin('${d.u}','starconnect')">${avHtml({name:d.n, avatar_color:d.c}, "")}${d.n}</button>`).join("");
 
         // theme
         const savedTheme = localStorage.getItem("theme") || "light";

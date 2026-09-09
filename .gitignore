@@ -12,6 +12,7 @@ site_zensical_src
 coverage.xml
 .netlify
 test.db
+myapp/app.db
 log.txt
 Pipfile.lock
 env3.*

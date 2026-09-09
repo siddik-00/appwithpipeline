@@ -75,7 +75,7 @@ def seed_demo_data():
         for username, name, bio, color, _, verified in demo_users:
             u = User(
                 username=username,
-                password_hash=password_hash.hash("demo123"),
+                password_hash=password_hash.hash("starconnect"),
                 name=name,
                 bio=bio,
                 avatar_color=color,
