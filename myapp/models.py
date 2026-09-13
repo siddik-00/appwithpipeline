@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
@@ -18,9 +18,10 @@ class User(SQLModel, table=True):
     name: str = ""
     bio: str = ""
     avatar_color: str = "#6366f1"
+    avatar_url: str = ""
     verified: bool = False
     online: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Post(SQLModel, table=True):
@@ -30,7 +31,7 @@ class Post(SQLModel, table=True):
     content: str
     gradient: str = Field(default="linear-gradient(135deg,#8364E8,#D397FA)")
     image: str | None = Field(default=None, max_length=20000000)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Comment(SQLModel, table=True):
@@ -38,7 +39,7 @@ class Comment(SQLModel, table=True):
     post_id: int = Field(index=True, foreign_key="post.id")
     user_id: int = Field(index=True, foreign_key="user.id")
     content: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Like(SQLModel, table=True):
@@ -46,14 +47,14 @@ class Like(SQLModel, table=True):
     post_id: int = Field(index=True, foreign_key="post.id")
     user_id: int = Field(index=True, foreign_key="user.id")
     reaction: str = Field(default="like")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Bookmark(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     post_id: int = Field(index=True, foreign_key="post.id")
     user_id: int = Field(index=True, foreign_key="user.id")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Follow(SQLModel, table=True):
@@ -67,7 +68,7 @@ class Story(SQLModel, table=True):
     user_id: int = Field(index=True, foreign_key="user.id")
     content: str
     gradient: str = Field(default="linear-gradient(135deg,#6200EE,#D397FA)")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Notification(SQLModel, table=True):
@@ -77,4 +78,4 @@ class Notification(SQLModel, table=True):
     type: str
     message: str
     read: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)

@@ -40,6 +40,7 @@ try:
             "address",
             "country",
             "website",
+            "avatar_url",
         ],
         "post": ["parent_id", "image"],
     }

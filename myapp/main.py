@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -107,12 +107,12 @@ def seed_demo_data():
         ]
         posts_by_username = {
             "masud": [
-                "We are hiring! Looking for passionate developers to join our team. 🌟",
-                "Thankful to our amazing community for the constant support and feedback! 🙌",
+                "We are hiring! Looking for passionate developers to join our team. ðŸŒŸ",
+                "Thankful to our amazing community for the constant support and feedback! ðŸ™Œ",
                 "Big milestone reached for StarConnect. The journey is just beginning!",
             ],
             "nusrat": [
-                "5 marketing tips that instantly boosted engagement for my clients 📈",
+                "5 marketing tips that instantly boosted engagement for my clients ðŸ“ˆ",
                 "Morning routine of top performers: 30 min reading + 10 min planning.",
             ],
             "tanvir": [
@@ -147,7 +147,7 @@ def seed_demo_data():
             db.flush()
             users[d["username"]] = u
 
-        created = datetime.utcnow()
+        created = datetime.now()
         order = [
             ("masud", 0),
             ("nusrat", 0),
@@ -187,12 +187,12 @@ def seed_demo_data():
             (
                 users["nusrat"].id,
                 all_posts[0].id,
-                "Congrats Masud, this is amazing! 🎉",
+                "Congrats Masud, this is amazing! ðŸŽ‰",
             ),
             (
                 users["tanvir"].id,
                 all_posts[0].id,
-                "I would love to join. Let's grow together 🚀",
+                "I would love to join. Let's grow together ðŸš€",
             ),
             (users["masud"].id, all_posts[1].id, "Very useful tips, thank you Nusrat!"),
         ]
@@ -229,11 +229,11 @@ def seed_demo_data():
         stories = [
             (
                 "masud",
-                "Big announcement coming! 🔥",
+                "Big announcement coming! ðŸ”¥",
                 "linear-gradient(135deg,#6200EE,#D397FA)",
             ),
-            ("nusrat", "Daily tip below 👇", "linear-gradient(135deg,#FF0F7B,#F89B29)"),
-            ("tanvir", "Coding at night 💻", "linear-gradient(135deg,#006EFF,#00D68F)"),
+            ("nusrat", "Daily tip below ðŸ‘‡", "linear-gradient(135deg,#FF0F7B,#F89B29)"),
+            ("tanvir", "Coding at night ðŸ’»", "linear-gradient(135deg,#006EFF,#00D68F)"),
             ("sadia", "Career Q&A today!", "linear-gradient(135deg,#8B5CF6,#EC4899)"),
         ]
         for username, content, grad in stories:
@@ -373,6 +373,7 @@ def public_user(u: User) -> dict:
         "website": u.website or "",
         "bio": u.bio,
         "avatar_color": u.avatar_color,
+        "avatar_url": u.avatar_url or None,
         "verified": u.verified,
     }
 
@@ -493,6 +494,7 @@ async def me(
         "country": user.country or "",
         "website": user.website or "",
         "since": user.created_at.strftime("%B %Y"),
+        "avatar_url": user.avatar_url or None,
         "followers": followers,
         "following": following,
         "posts": posts,
@@ -1025,6 +1027,33 @@ async def user_posts(
         "user": public_user(target),
         "posts": [build_post(db, p, user) for p in posts],
     }
+
+
+@app.post("/api/profile/avatar")
+async def update_avatar(
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    avatar_url = (body.get("avatar_url") or "").strip()
+    if not avatar_url:
+        raise HTTPException(status_code=400, detail="Image required")
+    if len(avatar_url) > 20_000_000:
+        raise HTTPException(status_code=400, detail="Image is too large")
+    if not (avatar_url.startswith("data:image/") or avatar_url.startswith(("http://", "https://"))):
+        raise HTTPException(status_code=400, detail="Invalid image")
+    user.avatar_url = avatar_url
+    db.add(user)
+    post = Post(
+        user_id=user.id,
+        content="ðŸ–¼ï¸ Updated my profile picture",
+        gradient="linear-gradient(135deg,#6200EE,#D397FA)",
+        image=avatar_url,
+    )
+    db.add(post)
+    db.commit()
+    db.refresh(user)
+    return {"ok": True, "avatar_url": user.avatar_url}
 
 
 @app.post("/api/profile")
