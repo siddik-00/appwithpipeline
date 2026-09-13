@@ -13,3 +13,10 @@ INFO:     Started server process [8952]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 WARNING:  WatchFiles detected changes in 'myapp\main.py', 'myapp\models.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [8952]
+INFO:     Started server process [15196]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
