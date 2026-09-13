@@ -40,17 +40,70 @@ def seed_demo_data():
         if db.exec(select(User)).first():
             return
         demo_users = [
-            ("masud", "Masud Rahman", "Building StarConnect Asia", "#6200EE", 3, True),
-            (
-                "nusrat",
-                "Nusrat Jahan",
-                "Expert in digital marketing",
-                "#FF0F7B",
-                2,
-                True,
-            ),
-            ("tanvir", "Tanvir Ahmed", "Full-stack developer", "#006EFF", 2, False),
-            ("sadia", "Sadia Islam", "Career advisor | Mentor", "#00D68F", 2, True),
+            {
+                "username": "masud",
+                "first_name": "Masud",
+                "last_name": "Rahman",
+                "name": "Masud Rahman",
+                "bio": "Building StarConnect Asia",
+                "email": "masud@starconnect.app",
+                "phone": "+880 1711-000001",
+                "profession": "Founder & CEO",
+                "address": "Gulshan, Dhaka",
+                "country": "Bangladesh",
+                "website": "starconnect.app",
+                "avatar_color": "#6200EE",
+                "online": True,
+                "verified": True,
+            },
+            {
+                "username": "nusrat",
+                "first_name": "Nusrat",
+                "last_name": "Jahan",
+                "name": "Nusrat Jahan",
+                "bio": "Expert in digital marketing",
+                "email": "nusrat@marketing.io",
+                "phone": "+880 1711-000002",
+                "profession": "Digital Marketing Expert",
+                "address": "Dhaka",
+                "country": "Bangladesh",
+                "website": "nusrat.digital",
+                "avatar_color": "#FF0F7B",
+                "online": False,
+                "verified": True,
+            },
+            {
+                "username": "tanvir",
+                "first_name": "Tanvir",
+                "last_name": "Ahmed",
+                "name": "Tanvir Ahmed",
+                "bio": "Full-stack developer",
+                "email": "tanvir@dev.io",
+                "phone": "+880 1711-000003",
+                "profession": "Full-stack Developer",
+                "address": "Sylhet",
+                "country": "Bangladesh",
+                "website": "tanvir.dev",
+                "avatar_color": "#006EFF",
+                "online": False,
+                "verified": False,
+            },
+            {
+                "username": "sadia",
+                "first_name": "Sadia",
+                "last_name": "Islam",
+                "name": "Sadia Islam",
+                "bio": "Career advisor | Mentor",
+                "email": "sadia@career.com",
+                "phone": "+880 1711-000004",
+                "profession": "Career Advisor & Mentor",
+                "address": "Rajshahi",
+                "country": "Bangladesh",
+                "website": "sadia.career",
+                "avatar_color": "#00D68F",
+                "online": False,
+                "verified": True,
+            },
         ]
         posts_by_username = {
             "masud": [
@@ -72,19 +125,27 @@ def seed_demo_data():
             ],
         }
         users = {}
-        for username, name, bio, color, _, verified in demo_users:
+        for d in demo_users:
             u = User(
-                username=username,
+                username=d["username"],
                 password_hash=password_hash.hash("starconnect"),
-                name=name,
-                bio=bio,
-                avatar_color=color,
-                verified=verified,
-                online=(username == "masud"),
+                first_name=d["first_name"],
+                last_name=d["last_name"],
+                name=d["name"],
+                bio=d["bio"],
+                email=d["email"],
+                phone=d["phone"],
+                profession=d["profession"],
+                address=d["address"],
+                country=d["country"],
+                website=d["website"],
+                avatar_color=d["avatar_color"],
+                verified=d["verified"],
+                online=d["online"],
             )
             db.add(u)
             db.flush()
-            users[username] = u
+            users[d["username"]] = u
 
         created = datetime.utcnow()
         order = [
@@ -225,11 +286,80 @@ def on_startup():
         seed_demo_data()
     except Exception:
         pass
+    try:
+        backfill_profiles()
+    except Exception:
+        pass
+
+
+def backfill_profiles():
+    updates = {
+        "masud": {
+            "first_name": "Masud",
+            "last_name": "Rahman",
+            "email": "masud@starconnect.app",
+            "phone": "+880 1711-000001",
+            "profession": "Founder & CEO",
+            "address": "Gulshan, Dhaka",
+            "country": "Bangladesh",
+            "website": "starconnect.app",
+        },
+        "nusrat": {
+            "first_name": "Nusrat",
+            "last_name": "Jahan",
+            "email": "nusrat@marketing.io",
+            "phone": "+880 1711-000002",
+            "profession": "Digital Marketing Expert",
+            "address": "Dhaka",
+            "country": "Bangladesh",
+            "website": "nusrat.digital",
+        },
+        "tanvir": {
+            "first_name": "Tanvir",
+            "last_name": "Ahmed",
+            "email": "tanvir@dev.io",
+            "phone": "+880 1711-000003",
+            "profession": "Full-stack Developer",
+            "address": "Sylhet",
+            "country": "Bangladesh",
+            "website": "tanvir.dev",
+        },
+        "sadia": {
+            "first_name": "Sadia",
+            "last_name": "Islam",
+            "email": "sadia@career.com",
+            "phone": "+880 1711-000004",
+            "profession": "Career Advisor & Mentor",
+            "address": "Rajshahi",
+            "country": "Bangladesh",
+            "website": "sadia.career",
+        },
+    }
+    with Session(engine) as db:
+        for username, fields in updates.items():
+            u = db.exec(select(User).where(User.username == username)).first()
+            if not u:
+                continue
+            changed = False
+            for key, value in fields.items():
+                if not getattr(u, key, ""):
+                    setattr(u, key, value)
+                    changed = True
+            if changed:
+                full = f"{u.first_name} {u.last_name}".strip()
+                if full:
+                    u.name = full
+                db.add(u)
+        db.commit()
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return TEMPLATES.TemplateResponse(request, "index.html", {})
+    res = TEMPLATES.TemplateResponse(request, "index.html", {})
+    res.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    res.headers["Pragma"] = "no-cache"
+    res.headers["Expires"] = "0"
+    return res
 
 
 def public_user(u: User) -> dict:
@@ -237,6 +367,10 @@ def public_user(u: User) -> dict:
         "id": u.id,
         "username": u.username,
         "name": u.name or u.username,
+        "first_name": u.first_name or "",
+        "last_name": u.last_name or "",
+        "profession": u.profession or "",
+        "website": u.website or "",
         "bio": u.bio,
         "avatar_color": u.avatar_color,
         "verified": u.verified,
@@ -251,6 +385,7 @@ def post_dict(
     comments: list,
     reaction: str = "",
     bookmarked: bool = False,
+    shared: dict | None = None,
 ) -> dict:
     return {
         "id": p.id,
@@ -262,6 +397,7 @@ def post_dict(
         "reaction": reaction,
         "like_count": like_count,
         "bookmarked": bookmarked,
+        "shared": shared,
         "comments": comments,
     }
 
@@ -273,7 +409,10 @@ def post_dict(
 async def signup(body: dict = Body(...), db: Session = Depends(get_db)):
     username = (body.get("username") or "").strip()
     password = body.get("password") or ""
-    name = (body.get("name") or "").strip() or username
+    first_name = (body.get("first_name") or "").strip()
+    last_name = (body.get("last_name") or "").strip()
+    email = (body.get("email") or "").strip()
+    profession = (body.get("profession") or "").strip()
     if not username or not password:
         raise HTTPException(status_code=400, detail="Username and password required")
     if db.exec(select(User).where(User.username == username)).first():
@@ -281,7 +420,11 @@ async def signup(body: dict = Body(...), db: Session = Depends(get_db)):
     user = User(
         username=username,
         password_hash=password_hash.hash(password),
-        name=name,
+        first_name=first_name,
+        last_name=last_name,
+        name=f"{first_name} {last_name}".strip() or username,
+        email=email,
+        profession=profession,
         avatar_color=pick_color(),
     )
     db.add(user)
@@ -340,6 +483,15 @@ async def me(
     )
     return {
         "user": public_user(user),
+        "first_name": user.first_name or "",
+        "last_name": user.last_name or "",
+        "email": user.email or "",
+        "phone": user.phone or "",
+        "profession": user.profession or "",
+        "address": user.address or "",
+        "country": user.country or "",
+        "website": user.website or "",
+        "since": user.created_at.strftime("%B %Y"),
         "followers": followers,
         "following": following,
         "posts": posts,
@@ -389,6 +541,17 @@ def build_post(db: Session, p: Post, user: User | None) -> dict:
         ).first()
     )
     comment_list = build_comments(db, p.id)
+    shared = None
+    if p.parent_id:
+        parent = db.get(Post, p.parent_id)
+        if parent:
+            shared = {
+                "id": parent.id,
+                "content": parent.content,
+                "gradient": parent.gradient,
+                "time": parent.created_at.strftime("%Y-%m-%d %H:%M"),
+                "author": public_user(db.get(User, parent.user_id)),
+            }
     return post_dict(
         p,
         author,
@@ -397,6 +560,7 @@ def build_post(db: Session, p: Post, user: User | None) -> dict:
         comments=comment_list,
         reaction=my_like.reaction if my_like else "",
         bookmarked=bookmarked,
+        shared=shared,
     )
 
 
@@ -404,7 +568,7 @@ def build_post(db: Session, p: Post, user: User | None) -> dict:
 async def get_feed(
     user: User | None = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    posts = db.exec(select(Post).order_by(Post.created_at.desc())).all()
+    posts = db.exec(select(Post).order_by(Post.id.desc())).all()
     return {
         "user": public_user(user) if user else None,
         "posts": [build_post(db, p, user) for p in posts],
@@ -485,6 +649,54 @@ async def create_post(
     return build_post(db, post, user)
 
 
+@app.put("/api/posts/{post_id}")
+async def edit_post(
+    post_id: int,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    post = db.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own posts")
+    content = (body.get("content") or "").strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Post content required")
+    gradient = body.get("gradient") or ""
+    post.content = content
+    post.gradient = gradient or post.gradient
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return build_post(db, post, user)
+
+
+@app.delete("/api/posts/{post_id}")
+async def delete_post(
+    post_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    post = db.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own posts")
+    for like in db.exec(select(Like).where(Like.post_id == post_id)).all():
+        db.delete(like)
+    for comment in db.exec(select(Comment).where(Comment.post_id == post_id)).all():
+        db.delete(comment)
+    for bookmark in db.exec(select(Bookmark).where(Bookmark.post_id == post_id)).all():
+        db.delete(bookmark)
+    for share in db.exec(select(Post).where(Post.parent_id == post_id)).all():
+        db.delete(share)
+    db.delete(post)
+    db.commit()
+    return {"ok": True}
+
+
 @app.post("/api/posts/{post_id}/like")
 async def toggle_like(
     post_id: int,
@@ -523,6 +735,28 @@ async def toggle_like(
     return {"liked": liked, "like_count": count, "reaction": reaction}
 
 
+@app.post("/api/posts/{post_id}/share")
+async def share_post(
+    post_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    original = db.get(Post, post_id)
+    if not original:
+        raise HTTPException(status_code=404, detail="Post not found")
+    root_id = original.parent_id or original.id
+    share = Post(
+        user_id=user.id,
+        parent_id=root_id,
+        content="",
+        gradient=original.gradient,
+    )
+    db.add(share)
+    db.commit()
+    db.refresh(share)
+    return build_post(db, share, user)
+
+
 @app.post("/api/posts/{post_id}/bookmark")
 async def toggle_bookmark(
     post_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)
@@ -558,6 +792,34 @@ async def create_story(
     db.commit()
     db.refresh(story)
     return {"ok": True, "id": story.id}
+
+
+@app.put("/api/comments/{comment_id}")
+async def edit_comment(
+    comment_id: int,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    comment = db.get(Comment, comment_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own comments")
+    content = (body.get("content") or "").strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Comment required")
+    comment.content = content
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    author = db.get(User, comment.user_id)
+    return {
+        "id": comment.id,
+        "content": comment.content,
+        "time": comment.created_at.strftime("%Y-%m-%d %H:%M"),
+        "author": public_user(author),
+    }
 
 
 @app.post("/api/posts/{post_id}/comments")
@@ -731,7 +993,7 @@ async def user_posts(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
     posts = db.exec(
-        select(Post).where(Post.user_id == user_id).order_by(Post.created_at.desc())
+        select(Post).where(Post.user_id == user_id).order_by(Post.id.desc())
     ).all()
     return {
         "user": public_user(target),
@@ -745,10 +1007,31 @@ async def update_profile(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
+    if "first_name" in body:
+        user.first_name = (body.get("first_name") or "").strip()
+    if "last_name" in body:
+        user.last_name = (body.get("last_name") or "").strip()
+    if "email" in body:
+        user.email = (body.get("email") or "").strip()
+    if "phone" in body:
+        user.phone = (body.get("phone") or "").strip()
+    if "profession" in body:
+        user.profession = (body.get("profession") or "").strip()
+    if "address" in body:
+        user.address = (body.get("address") or "").strip()
+    if "country" in body:
+        user.country = (body.get("country") or "").strip()
+    if "website" in body:
+        user.website = (body.get("website") or "").strip()
     if "name" in body:
         user.name = (body.get("name") or "").strip()
     if "bio" in body:
         user.bio = (body.get("bio") or "").strip()
+    full = f"{user.first_name} {user.last_name}".strip()
+    if full:
+        user.name = full
+    elif not user.name:
+        user.name = user.username
     db.add(user)
     db.commit()
     db.refresh(user)

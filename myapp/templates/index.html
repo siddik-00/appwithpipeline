@@ -232,6 +232,28 @@
         .update-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,58,237,.4); }
         .update-btn:active { transform: scale(.97); }
 
+        .edit-box { padding: 14px 8px 0; }
+        .edit-box textarea {
+            width: 100%; border: 1.5px solid var(--border); background: var(--bg-alt);
+            border-radius: var(--radius); padding: 12px 16px; font-size: 15px;
+            font-family: inherit; resize: none; outline: none; color: var(--text);
+            transition: all .25s ease; line-height: 1.5;
+        }
+        .edit-box textarea:focus { border-color: var(--primary-light); background: var(--card); box-shadow: 0 0 0 4px rgba(124,58,237,.06); }
+        .edit-box .grad-picker { margin-top: 12px; display: flex; gap: 8px; }
+
+        .toast-wrap {
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center;
+        }
+        .toast {
+            background: #111827; color: #fff; padding: 10px 20px;
+            border-radius: var(--radius-full); font-size: 13px; font-weight: 600;
+            box-shadow: var(--shadow-lg); animation: popup .2s ease forwards;
+        }
+        body.dark .toast { background: #2d2548; }
+        @media (min-width: 1050px) { .toast-wrap { bottom: 30px; } }
+
         /* Stories */
         .stories { display: flex; gap: 16px; overflow-x: auto; padding: 18px 20px; }
         .stories::-webkit-scrollbar { display: none; }
@@ -265,6 +287,9 @@
         }
         .story-modal .s-a { margin-bottom: 16px; }
         .story-modal .s-text { font-size: 22px; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+        .s-progress { position: absolute; top: 14px; left: 16px; right: 64px; height: 4px; background: rgba(255,255,255,.25); border-radius: 999px; overflow: hidden; }
+        .s-progress-fill { height: 100%; width: 100%; background: #fff; border-radius: 999px; transform-origin: left; animation: sProgress 4.5s linear forwards; }
+        @keyframes sProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         .story-modal .s-close {
             position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; border-radius: 50%;
             background: rgba(255,255,255,.2); backdrop-filter: blur(10px);
@@ -277,6 +302,31 @@
         .post-card { padding: 20px; transition: background .2s ease; position: relative; overflow: visible; }
         .post-card:hover { background: var(--bg-alt); }
         .post-head { display: flex; gap: 14px; align-items: center; }
+        .post-menu-wrap { position: relative; flex-shrink: 0; }
+        .post-menu-btn {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; color: var(--text-secondary);
+            transition: all .2s ease;
+        }
+        .post-menu-btn:hover { background: var(--bg-alt); color: var(--primary); }
+        .post-menu {
+            position: absolute; right: 0; top: calc(100% + 6px);
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+            min-width: 170px; padding: 6px; z-index: 99;
+            animation: popup .15s ease forwards;
+        }
+        .post-menu button {
+            width: 100%; display: flex; align-items: center; gap: 8px;
+            text-align: left; padding: 9px 12px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; color: var(--text-secondary);
+            transition: all .15s ease; font-family: inherit;
+            border: none; background: none; cursor: pointer;
+        }
+        .post-menu button:hover { background: var(--bg-alt); color: var(--text); }
+        .post-menu button.del { color: var(--danger); }
+        .post-menu button.del:hover { background: rgba(239,68,68,.08); }
         .post-head .avatar { width: 48px; height: 48px; font-size: 17px; }
         .post-meta { flex: 1; min-width: 0; }
         .post-meta .name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
@@ -288,6 +338,20 @@
         }
         .online-chip { font-size: 10px; font-weight: 600; color: var(--success); }
         .post-text { margin: 14px 8px 0; font-size: 15px; line-height: 1.6; color: var(--text); }
+        .share-box { margin-top: 14px; }
+        .share-head { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; padding-left: 8px; }
+        .share-card {
+            display: flex; gap: 12px; padding: 14px 16px;
+            background: var(--bg-alt); border: 1px solid var(--border-light);
+            border-radius: var(--radius); cursor: pointer; align-items: flex-start;
+            transition: all .2s ease;
+        }
+        .share-card:hover { border-color: var(--primary-light); background: var(--card); box-shadow: var(--shadow-sm); }
+        .share-card .avatar { width: 36px; height: 36px; font-size: 14px; flex-shrink: 0; }
+        .share-card-body { min-width: 0; }
+        .share-card-body .name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .share-card-body .time { color: var(--muted); font-size: 11px; margin-top: 1px; }
+        .share-text { margin-top: 8px; font-size: 14px; line-height: 1.55; color: var(--text); }
         .post-grad {
             margin: 14px 8px 0; height: 200px; border-radius: var(--radius); position: relative;
             display: flex; align-items: center; justify-content: center;
@@ -300,7 +364,7 @@
         }
         .post-grad .emoji { position: absolute; top: 14px; right: 16px; font-size: 24px; z-index: 1; }
 
-        .social-bar { display: flex; margin-top: 14px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 4px; position: relative; }
+        .social-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 14px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 4px; position: relative; }
         .soc {
             flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
             padding: 10px; border-radius: var(--radius-sm);
@@ -313,6 +377,10 @@
         .soc.liked[data-reaction="celebrate"] { color: var(--amber); background: rgba(245,158,11,.06); }
         .soc.saved { color: var(--primary); background: rgba(124,58,237,.06); }
         .soc i { font-style: normal; font-size: 18px; }
+        @media (max-width: 480px) {
+            .soc { padding: 9px 5px; gap: 5px; font-size: 12px; }
+            .soc i { font-size: 16px; }
+        }
         .react-pop {
             position: fixed;
             background: var(--card); border: 1px solid var(--border);
@@ -324,6 +392,33 @@
         @keyframes popup { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
         .react-pop button { border: none; background: none; font-size: 22px; padding: 4px; border-radius: 8px; transition: all .15s ease; }
         .react-pop button:hover { transform: scale(1.3); background: var(--bg-alt); }
+
+        .like-wrap { flex: 1; display: flex; align-items: center; position: relative; min-width: 0; }
+        .like-wrap .soc { flex: 1; }
+        .soc-react {
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; color: var(--text-secondary); background: var(--bg-alt);
+            margin: 0 4px; transition: all .2s ease; border: 1.5px solid var(--border-light);
+        }
+        .soc-react:hover { background: var(--primary); color: #fff; transform: scale(1.12); border-color: var(--primary); }
+        .like-wrap .react-pop { right: 0; }
+
+        .c-editbar { display: flex; gap: 8px; align-items: center; width: 100%; }
+        .c-editbar input {
+            flex: 1; padding: 8px 12px; border: 1.5px solid var(--border);
+            border-radius: var(--radius-full); font-size: 13px; font-family: inherit;
+            background: var(--card); outline: none; color: var(--text); min-width: 0;
+        }
+        .c-editbar input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(124,58,237,.06); }
+        .c-editbar .pill-btn { padding: 6px 16px; font-size: 12px; }
+        .c-edit {
+            float: right; margin-left: 8px; font-size: 12px; color: var(--muted);
+            background: var(--bg-alt); border: none; border-radius: var(--radius-sm);
+            cursor: pointer; padding: 2px 6px; transition: all .2s ease;
+            font-family: inherit;
+        }
+        .c-edit:hover { color: var(--primary); background: rgba(124,58,237,.12); }
 
         /* Comments */
         .comments { padding: 4px 20px 18px; }
@@ -429,6 +524,28 @@
             transition: all .2s ease; outline: none;
         }
         .edit-area input:focus, .edit-area textarea:focus { border-color: var(--primary-light); background: var(--card); box-shadow: 0 0 0 3px rgba(124,58,237,.06); }
+        .edit-grid { display: flex; gap: 10px; }
+        .edit-grid input { flex: 1; }
+
+        .p-title {
+            display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 700;
+            color: var(--primary); background: rgba(124,58,237,.08);
+            padding: 4px 14px; border-radius: var(--radius-full);
+            border: 1px solid rgba(124,58,237,.15);
+        }
+        .p-details { padding: 4px 24px 18px; border-top: 1px solid var(--border); }
+        .p-detail {
+            display: flex; gap: 12px; padding: 9px 0; font-size: 14px;
+            align-items: baseline; border-bottom: 1px dashed var(--border-light);
+        }
+        .p-detail:last-child { border-bottom: none; }
+        .p-detail .dl {
+            font-weight: 700; color: var(--muted); min-width: 110px;
+            flex-shrink: 0; font-size: 12px; text-transform: uppercase;
+            letter-spacing: .5px; padding-top: 2px;
+        }
+        .p-detail a { color: var(--primary); font-weight: 600; }
+        .p-detail a:hover { text-decoration: underline; }
 
         /* Auth */
         .auth-screen {
@@ -542,6 +659,27 @@
         }
         .search-wrap { position: relative; flex: 1; max-width: 440px; }
         .theme-toggle { background: var(--bg-alt); border: 1.5px solid var(--border); }
+
+        .avatar-menu-wrap { position: relative; }
+        .avatar-menu {
+            position: absolute; right: 0; top: calc(100% + 10px);
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); box-shadow: var(--shadow-lg);
+            min-width: 200px; padding: 8px; z-index: 999;
+            animation: popup .18s ease forwards;
+        }
+        .avatar-menu .am-head { padding: 10px 12px; border-bottom: 1px solid var(--border-light); margin-bottom: 6px; }
+        .avatar-menu .am-name { font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        .avatar-menu .am-user { color: var(--muted); font-size: 12px; margin-top: 2px; font-weight: 500; }
+        .avatar-menu .am-item {
+            width: 100%; text-align: left; padding: 10px 12px;
+            border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+            color: var(--text-secondary); display: flex; align-items: center; gap: 10px;
+            transition: all .2s ease; font-family: inherit;
+        }
+        .avatar-menu .am-item:hover { background: var(--bg-alt); color: var(--text); }
+        .avatar-menu .am-logout { color: var(--danger); }
+        .avatar-menu .am-logout:hover { background: rgba(239,68,68,.08); color: var(--danger); }
     </style>
 </head>
 <body>
@@ -587,7 +725,7 @@
     <div id="view-app" class="hidden">
         <header class="header">
             <div class="header-inner">
-                <div class="logo"><div class="star">&#9733;</div><div><span class="logo-text">StarConnect<small>Social for you</small></span></div></div>
+                <div class="logo" id="headerLogo" style="cursor:pointer;" title="Refresh"><div class="star">&#9733;</div><div><span class="logo-text">StarConnect<small>Social for you</small></span></div></div>
                 <div class="search-wrap">
                     <div class="search"><span class="ico">&#128269;</span><input type="text" id="searchBox" placeholder="Search users or posts..."></div>
                 </div>
@@ -595,7 +733,17 @@
                     <button class="icon-btn theme-toggle" id="themeBtn" title="Toggle theme">&#127769;</button>
                     <button class="icon-btn" id="navHome" title="Home">&#127968;</button>
                     <button class="icon-btn" id="navNotifyT" title="Alerts">&#128276;<span class="dot hidden" id="headerDot"></span></button>
-                    <div class="avatar" id="hAvatar" style="cursor:pointer"></div>
+                    <div class="avatar-menu-wrap" id="avatarMenuWrap">
+                        <div class="avatar" id="hAvatar" style="cursor:pointer"></div>
+                        <div class="avatar-menu hidden" id="avatarMenu">
+                            <div class="am-head">
+                                <div class="am-name" id="amName">-</div>
+                                <div class="am-user" id="amUser">@-</div>
+                            </div>
+                            <button class="am-item" id="amProfile">&#128100; My Profile</button>
+                            <button class="am-item am-logout" id="amLogout">&#8594; Logout</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -615,8 +763,15 @@
             <div class="feed-col">
                 <div class="card hidden" id="searchResults" style="margin-bottom:16px;"></div>
                 <div id="view-home" class="subview active">
-                    <div class="card">
-                        <div class="composer hidden" id="composerCard">
+                    <div class="card stories-wrap" style="margin-bottom:16px;">
+                        <div class="stories" id="storiesRow"></div>
+                        <div class="story-add-form hidden" id="storyAddForm">
+                            <input type="text" id="storyText" placeholder="Share a quick update..." style="flex:1; padding:12px 18px; border:1.5px solid var(--border); border-radius:var(--radius-full); background:var(--bg-alt); color:var(--text); outline:none; font-family:inherit; font-size:14px; transition: all .2s ease;">
+                            <button class="pill-btn primary" id="storyAddBtn">Add Story</button>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-bottom:16px;">
+                        <div class="composer" id="composerCard">
                             <div class="composer-row">
                                 <div class="avatar" id="cAvatar" style="margin-top:4px;"></div>
                                 <textarea id="composeText" placeholder="Share a thought with your community..." rows="2"></textarea>
@@ -625,13 +780,6 @@
                                 <div class="grad-picker" id="gradPicker"></div>
                                 <button class="update-btn" id="composeBtn">Post</button>
                             </div>
-                        </div>
-                    </div>
-                    <div class="card stories-wrap" style="margin-bottom:16px;">
-                        <div class="stories" id="storiesRow"></div>
-                        <div class="story-add-form hidden" id="storyAddForm">
-                            <input type="text" id="storyText" placeholder="Share a quick update..." style="flex:1; padding:12px 18px; border:1.5px solid var(--border); border-radius:var(--radius-full); background:var(--bg-alt); color:var(--text); outline:none; font-family:inherit; font-size:14px; transition: all .2s ease;">
-                            <button class="pill-btn primary" id="storyAddBtn">Add Story</button>
                         </div>
                     </div>
                     <div class="card" id="feedList"></div>
@@ -650,11 +798,12 @@
                 <div id="view-profile" class="subview hidden">
                     <div class="card">
                         <div class="profile-cover" id="pCover">
-                            <div class="profile-avatar-wrap"><div class="avatar" id="pAvatar" style="width:76px;height:76px;font-size:28px;border:4px solid var(--card);box-shadow:0 4px 15px rgba(0,0,0,.2)"></div></div>
+                            <div class="profile-avatar-wrap"><div class="avatar" id="pAvatar" style="width:92px;height:92px;font-size:32px;border:4px solid var(--card);box-shadow:0 6px 20px rgba(0,0,0,.25)"></div></div>
                         </div>
                         <div class="profile-info">
                             <h2 id="pName">-</h2>
                             <div class="p-user" id="pUsername">@-</div>
+                            <div class="p-title hidden" id="pTitle"></div>
                             <div class="p-bio" id="pBio"></div>
                         </div>
                         <div class="stats-row">
@@ -662,12 +811,32 @@
                             <div class="stat-box"><div class="num" id="pFollowers">0</div><div class="lbl">Followers</div></div>
                             <div class="stat-box"><div class="num" id="pFollowing">0</div><div class="lbl">Following</div></div>
                         </div>
+                        <div class="p-details">
+                            <div class="p-detail"><span class="dl">Email</span><span id="pEmail" style="word-break:break-all;">-</span></div>
+                            <div class="p-detail"><span class="dl">Phone</span><span id="pPhone" hidden>-</span></div>
+                            <div class="p-detail"><span class="dl">Website</span><a id="pWebsite" target="_blank" rel="noopener" hidden>-</a></div>
+                            <div class="p-detail"><span class="dl">Address</span><span id="pAddress" hidden>-</span></div>
+                            <div class="p-detail"><span class="dl">Country</span><span id="pCountry" hidden>-</span></div>
+                            <div class="p-detail"><span class="dl">Member since</span><span id="pSince">-</span></div>
+                        </div>
                         <div style="padding:0 24px 18px; display:flex; gap:10px;">
                             <button class="pill-btn primary" id="editBtn">Edit Profile</button>
+                            <button class="pill-btn" id="logoutBtn" style="background:var(--danger); color:#fff; box-shadow:0 2px 8px rgba(239,68,68,.25);">Logout</button>
                         </div>
                         <div class="edit-area hidden" id="editCard">
-                            <input type="text" id="editName" placeholder="Full name">
-                            <textarea id="editBio" placeholder="Bio" rows="3"></textarea>
+                            <div class="edit-grid">
+                                <input type="text" id="editFirst" placeholder="First name">
+                                <input type="text" id="editLast" placeholder="Last name">
+                            </div>
+                            <input type="email" id="editEmail" placeholder="Email">
+                            <input type="tel" id="editPhone" placeholder="Phone">
+                            <input type="text" id="editTitle" placeholder="Profession / Job title">
+                            <input type="url" id="editWebsite" placeholder="Website">
+                            <div class="edit-grid">
+                                <input type="text" id="editAddress" placeholder="Address">
+                                <input type="text" id="editCountry" placeholder="Country">
+                            </div>
+                            <textarea id="editBio" placeholder="About / Bio" rows="3"></textarea>
                             <button class="pill-btn primary" id="saveProfile">Save Profile</button>
                         </div>
                     </div>
@@ -695,12 +864,16 @@
 
     <!-- Story Modal -->
     <div id="storyOverlay" class="story-overlay hidden" onclick="if(event.target===this)closeStory()">
-        <div class="story-modal" id="storyModal">
-            <button class="s-close" onclick="closeStory()">&#10005;</button>
+        <div class="story-modal" id="storyModal" onclick="closeStory()">
+            <div class="s-progress"><div class="s-progress-fill" id="sProgressFill"></div></div>
+            <button class="s-close" onclick="event.stopPropagation();closeStory()">&#10005;</button>
             <div class="s-a" id="storyAuthor"></div>
             <div class="s-text" id="storyText2"></div>
         </div>
     </div>
+
+    <!-- TOASTS -->
+    <div class="toast-wrap" id="toastWrap"></div>
 
     <!-- BOTTOM NAV (Mobile) -->
     <div class="bottomnav hidden" id="bottomNav">
@@ -797,6 +970,8 @@
             $("hAvatar").textContent = ah;
             $("cAvatar").style.background = user.avatar_color;
             $("cAvatar").textContent = ah;
+            $("amName").innerHTML = esc(user.name || user.username) + verified(user);
+            $("amUser").textContent = "@" + user.username;
             initGradPicker();
             changeView("home");
             loadAll();
@@ -820,12 +995,14 @@
         function changeView(name) {
             if (name === "connect") name = "home";
             state.view = name;
-            document.querySelectorAll(".subview").forEach(v => v.classList.remove("active"));
-            if (name === "home") $("view-home").classList.add("active");
-            if (name === "notify") { $("view-notify").classList.add("active"); loadNotifications(); }
-            if (name === "bookmarks") { $("view-bookmarks").classList.add("active"); loadBookmarks(); }
-            if (name === "profile") { $("view-profile").classList.add("active"); loadMe(); }
-            $("composerCard").parentElement.classList.toggle("hidden", name !== "home");
+            document.querySelectorAll(".subview").forEach(v => { v.classList.add("hidden"); v.classList.remove("active"); });
+            if (name === "home") { $("view-home").classList.remove("hidden"); $("view-home").classList.add("active"); }
+            if (name === "notify") { $("view-notify").classList.remove("hidden"); $("view-notify").classList.add("active"); loadNotifications(); }
+            if (name === "bookmarks") { $("view-bookmarks").classList.remove("hidden"); $("view-bookmarks").classList.add("active"); loadBookmarks(); }
+            if (name === "profile") { $("view-profile").classList.remove("hidden"); $("view-profile").classList.add("active"); loadMe(); }
+            const composerBox = $("composerCard");
+            composerBox.classList.toggle("hidden", name !== "home");
+            composerBox.parentElement.classList.toggle("hidden", name !== "home");
             $("searchResults").classList.add("hidden");
             if (name === "home") renderStories();
             renderMenu();
@@ -842,7 +1019,14 @@
 
         $("navHome").onclick = () => changeView("home");
         $("navNotifyT").onclick = () => changeView("notify");
-        $("hAvatar").onclick = () => changeView("profile");
+        $("headerLogo").onclick = () => location.reload();
+
+        function toggleAvatarMenu() { $("avatarMenu").classList.toggle("hidden"); }
+        function closeAvatarMenu() { $("avatarMenu").classList.add("hidden"); }
+        $("hAvatar").onclick = e => { e.stopPropagation(); toggleAvatarMenu(); };
+        document.addEventListener("click", closeAvatarMenu);
+        $("amProfile").onclick = e => { e.stopPropagation(); closeAvatarMenu(); changeView("profile"); };
+        $("amLogout").onclick = e => { e.stopPropagation(); closeAvatarMenu(); doLogout(); };
 
         async function doLogout() {
             try { await api("/api/auth/logout", "POST"); } catch (e) {}
@@ -869,12 +1053,16 @@
         $("composeBtn").onclick = postIt;
         async function postIt() {
             const text = $("composeText").value.trim();
-            if (!text) return;
+            if (!text) { toast("Please write something first"); $("composeText").focus(); return; }
+            $("composeBtn").disabled = true;
             try {
                 await api("/api/posts", "POST", { content: text, gradient: selGrad });
                 $("composeText").value = "";
-                loadFeed(); loadMe(); renderStories();
+                toast("Post published!");
+                await loadFeed(); loadMe(); renderStories();
+                window.scrollTo({ top: 0, behavior: "smooth" });
             } catch (e) { alert(e.message); }
+            $("composeBtn").disabled = false;
         }
 
         async function renderStories() {
@@ -911,9 +1099,25 @@
             $("storyModal").style.background = s.gradient;
             $("storyAuthor").innerHTML = `<div class="s-a" style="font-weight:700;display:flex;gap:10px;align-items:center;">${avHtml(s.author, "")} ${esc(s.author.name)}${verifyHtml(s.author)}</div>`;
             $("storyText2").textContent = s.content;
-            $("storyOverlay").classList.remove("hidden");
+            const ov = $("storyOverlay");
+            ov.style.display = "flex";
+            ov.classList.remove("hidden");
+            const fill = $("sProgressFill");
+            fill.style.animation = "none";
+            void fill.offsetWidth;
+            fill.style.animation = "";
+            clearTimeout(window.__storyTimer);
+            window.__storyTimer = setTimeout(() => {
+                ov.classList.add("hidden");
+                ov.style.display = "none";
+            }, 4500);
         }
-        function closeStory() { $("storyOverlay").classList.add("hidden"); }
+        function closeStory() {
+            clearTimeout(window.__storyTimer);
+            const ov = $("storyOverlay");
+            ov.classList.add("hidden");
+            ov.style.display = "none";
+        }
 
         let searchTimer;
         $("searchBox").addEventListener("input", () => {
@@ -947,11 +1151,10 @@
         }
 
         function postCard(p) {
-            const comments = p.comments.map(c => `
-                <div class="comment-item">
-                    ${avHtml(c.author, "")}
-                    <div class="comment-bubble"><span class="n">${esc(c.author.name)}${verifyHtml(c.author)}</span><span class="t">${c.time}</span><br>${esc(c.content)}</div>
-                </div>`).join("");
+            const comments = p.comments.map(c => commentHtml(c)).join("");
+            const isMine = state.user && p.author.id === state.user.id;
+            const currentGrad = state.grads.includes(p.gradient) ? p.gradient : state.grads[0];
+            const likeIcon = p.liked ? (p.reaction === "love" ? "&#10084;&#65039;" : p.reaction === "celebrate" ? "&#127881;" : "&#128077;") : "&#128077;";
             return `
             <div class="post-card" id="post-${p.id}">
                 <div class="post-head">
@@ -960,21 +1163,53 @@
                         <div class="name">${esc(p.author.name)}${verifyHtml(p.author)}</div>
                         <div class="time">@${esc(p.author.username)} &middot; ${p.time}</div>
                     </div>
+                    ${isMine ? `
+                    <div class="post-menu-wrap">
+                        <button class="post-menu-btn" title="More" onclick="event.stopPropagation(); togglePostMenu(${p.id})">&#8942;</button>
+                        <div class="post-menu hidden" id="pmenu-${p.id}">
+                            <button onclick="menuAction(${p.id}); startEdit(${p.id})">&#9998;&#65039; Edit post</button>
+                            <button class="del" onclick="menuAction(${p.id}); deletePost(${p.id})">&#128465;&#65039; Delete</button>
+                        </div>
+                    </div>` : ""}
                 </div>
-                <div class="post-text">${esc(p.content)}</div>
-                <div class="post-grad" style="background:${p.gradient}">
-                    <span class="emoji">&#9733;</span>
+                <div class="post-text" id="ptext-${p.id}" ${p.content ? "" : 'style="display:none"'}>${esc(p.content)}</div>
+                ${p.shared ? `
+                <div class="share-box">
+                    <div class="share-head">&#128257; ${esc(state.user && p.author.id === state.user.id ? "You" : p.author.name)} shared a post</div>
+                    <div class="share-card" onclick="sharePost(${p.shared.id})">
+                        ${avHtml(p.shared.author, "")}
+                        <div class="share-card-body">
+                            <div class="name">${esc(p.shared.author.name)}${verifyHtml(p.shared.author)}</div>
+                            <div class="time">@${esc(p.shared.author.username)} &middot; ${esc(p.shared.time)}</div>
+                            <div class="share-text">${esc(p.shared.content)}</div>
+                        </div>
+                    </div>
+                </div>` : ""}
+                <div class="edit-box hidden" id="editBox-${p.id}">
+                    <textarea id="editText-${p.id}" rows="3">${esc(p.content)}</textarea>
+                    <div class="grad-picker" id="egrad-${p.id}">
+                        ${state.grads.map((g, i) =>
+                            `<div class="grad-swatch ${g === currentGrad ? "sel" : ""}" data-g="${esc(g)}" style="background:${g}" onclick="pickEditGrad(${p.id}, this)"></div>`).join("")}
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="pill-btn primary" onclick="saveEdit(${p.id})">Save</button>
+                        <button class="pill-btn" onclick="cancelEdit(${p.id})">Cancel</button>
+                    </div>
                 </div>
                 <div class="social-bar">
-                    <button class="soc ${p.liked ? "liked" : ""}" data-reaction="${p.reaction || "like"}" onclick="toggleReact(${p.id}, this, 'like')">
-                        <i>&#128077;</i> <span>${p.like_count}</span>
+                    <span class="like-wrap">
+                        <button class="soc like-main ${p.liked ? "liked" : ""}" data-reaction="${p.reaction || "like"}" onclick="toggleLikeDirect(${p.id}, this)">
+                            <i>${likeIcon}</i> <span>${p.like_count}</span>
+                        </button>
+                        <button class="soc-react" title="Reactions" onclick="toggleReact(${p.id}, this)">&#128578;</button>
                         <span class="react-pop" onclick="event.stopPropagation()">
                             <button onclick="react(${p.id}, 'like')">&#128077;</button>
                             <button onclick="react(${p.id}, 'love')">&#10084;&#65039;</button>
                             <button onclick="react(${p.id}, 'celebrate')">&#127881;</button>
                         </span>
-                    </button>
-                    <button class="soc" onclick="focusComment(${p.id})"><i>&#128172;</i> ${p.comments.length} Comments</button>
+                    </span>
+                    <button class="soc" onclick="focusComment(${p.id})"><i>&#128172;</i> <span id="ccount-${p.id}">${p.comments.length}</span> Comments</button>
+                    <button class="soc" onclick="sharePost(${p.id})"><i>&#128257;</i> Share</button>
                     <button class="soc ${p.bookmarked ? "saved" : ""}" onclick="toggleBookmark(${p.id}, this)">${p.bookmarked ? "&#128278; Saved" : "&#128204; Save"}</button>
                 </div>
                 <div class="comments">
@@ -989,31 +1224,45 @@
 
         function focusComment(id) { const el = $("cin-" + id); if (el) el.focus(); }
 
-        function toggleReact(id, btn, r) {
+        function toggleReact(id, btn) {
             document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
-            const pop = btn.querySelector(".react-pop");
-            const rect = btn.getBoundingClientRect();
+            const wrap = btn.closest(".like-wrap");
+            const pop = wrap.querySelector(".react-pop");
+            const rect = wrap.getBoundingClientRect();
             pop.style.left = rect.left + rect.width / 2 + "px";
             pop.style.top = (rect.top - 8) + "px";
             pop.style.transform = "translateX(-50%) translateY(-100%)";
             pop.classList.toggle("show");
         }
         document.addEventListener("click", e => {
-            if (!e.target.closest(".soc")) document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
+            if (!e.target.closest(".soc") && !e.target.closest(".soc-react") && !e.target.closest(".react-pop"))
+                document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
         });
+
+        function likeIconFor(r) {
+            return r === "love" ? "&#10084;&#65039;" : r === "celebrate" ? "&#127881;" : "&#128077;";
+        }
+        function updateLikeBtn(btn, d) {
+            btn.classList.toggle("liked", d.liked);
+            btn.dataset.reaction = d.liked ? d.reaction : "like";
+            btn.innerHTML = `<i>${likeIconFor(d.liked ? d.reaction : "like")}</i> <span>${d.like_count}</span>`;
+        }
+        async function toggleLikeDirect(id, btn) {
+            const already = btn.classList.contains("liked");
+            const reaction = already ? (btn.dataset.reaction || "like") : "like";
+            try {
+                const d = await api("/api/posts/" + id + "/like", "POST", { reaction });
+                updateLikeBtn(btn, d);
+                document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
+            } catch (e) { alert(e.message); }
+        }
 
         async function react(id, reaction) {
             try {
                 const d = await api("/api/posts/" + id + "/like", "POST", { reaction });
-                const btn = document.querySelectorAll(`#post-${id} .soc`)[0];
-                btn.classList.toggle("liked", d.liked);
-                btn.dataset.reaction = d.liked ? d.reaction : "like";
-                btn.innerHTML = `<i>${d.liked ? (d.reaction === "love" ? "&#10084;&#65039;" : d.reaction === "celebrate" ? "&#127881;" : "&#128077;") : "&#128077;"}</i> <span>${d.like_count}</span>
-                    <span class="react-pop" onclick="event.stopPropagation()">
-                        <button onclick="react(${id}, 'like')">&#128077;</button>
-                        <button onclick="react(${id}, 'love')">&#10084;&#65039;</button>
-                        <button onclick="react(${id}, 'celebrate')">&#127881;</button>
-                    </span>`;
+                const btn = document.querySelector(`#post-${id} .like-main`);
+                if (btn) updateLikeBtn(btn, d);
+                document.querySelectorAll(".react-pop").forEach(p => p.classList.remove("show"));
             } catch (e) { alert(e.message); }
         }
 
@@ -1025,14 +1274,129 @@
             } catch (e) { alert(e.message); }
         }
 
+        function commentHtml(c) {
+            const isMine = state.user && c.author.id === state.user.id;
+            return `<div class="comment-item" id="comment-${c.id}">
+                ${avHtml(c.author, "")}
+                <div class="comment-bubble" data-content="${esc(c.content)}">
+                    <span class="n">${esc(c.author.name)}${verifyHtml(c.author)}</span><span class="t">${c.time}</span>
+                    ${isMine ? `<button class="c-edit" title="Edit comment" onclick="startEditComment(${c.id})">&#9998;&#65039;</button>` : ""}<br>${esc(c.content)}
+                </div>
+            </div>`;
+        }
+
         async function addComment(id) {
             const input = $("cin-" + id); const content = input.value.trim();
             if (!content) return;
             try {
                 const c = await api("/api/posts/" + id + "/comments", "POST", { content });
-                $("clist-" + id).insertAdjacentHTML("beforeend",
-                    `<div class="comment-item">${avHtml(c.author, "")}<div class="comment-bubble"><span class="n">${esc(c.author.name)}${verifyHtml(c.author)}</span><span class="t">${c.time}</span><br>${esc(c.content)}</div></div>`);
+                $("clist-" + id).insertAdjacentHTML("beforeend", commentHtml(c));
+                const cnt = $("ccount-" + id);
+                if (cnt) cnt.textContent = (parseInt(cnt.textContent, 10) || 0) + 1;
                 input.value = "";
+            } catch (e) { alert(e.message); }
+        }
+
+        function startEditComment(cid) {
+            const bubble = document.querySelector(`#comment-${cid} .comment-bubble`);
+            if (!bubble) return;
+            window.__ce = window.__ce || {};
+            window.__ce[cid] = bubble.innerHTML;
+            const orig = bubble.dataset.content || "";
+            bubble.innerHTML = `<div class="c-editbar">
+                <input id="ce-${cid}" value="${esc(orig)}">
+                <button class="pill-btn primary" onclick="saveEditComment(${cid})">Save</button>
+                <button class="pill-btn" onclick="cancelEditComment(${cid})">Cancel</button>
+            </div>`;
+            const inp = $("ce-" + cid);
+            inp.focus();
+            inp.setSelectionRange(inp.value.length, inp.value.length);
+            inp.onkeydown = e => { if (e.key === "Enter") saveEditComment(cid); };
+        }
+        function cancelEditComment(cid) {
+            const bubble = document.querySelector(`#comment-${cid} .comment-bubble`);
+            if (bubble && window.__ce && window.__ce[cid]) bubble.innerHTML = window.__ce[cid];
+        }
+        async function saveEditComment(cid) {
+            const inp = $("ce-" + cid);
+            const text = inp.value.trim();
+            if (!text) { inp.focus(); return; }
+            try {
+                const c = await api("/api/comments/" + cid, "PUT", { content: text });
+                const item = $("comment-" + cid);
+                if (item) item.outerHTML = commentHtml(c);
+            } catch (e) { alert(e.message); }
+        }
+
+        function toast(msg) {
+            const t = document.createElement("div");
+            t.className = "toast";
+            t.textContent = msg;
+            $("toastWrap").appendChild(t);
+            setTimeout(() => t.remove(), 2400);
+        }
+
+        function sharePost(id) {
+            const done = (d) => {
+                toast("Post shared to your feed!");
+                return d;
+            };
+            fetch("/api/posts/" + id + "/share", { method: "POST", headers: { "Content-Type": "application/json" } })
+                .then(r => r.ok ? r.json().then(done) : r.json().then(e => { throw new Error(e.detail || "Share failed"); }))
+                .then(() => refreshPostList())
+                .catch(e => alert(e.message));
+        }
+
+        function refreshPostList() {
+            if (state.view === "profile") loadMe();
+            else if (state.view === "bookmarks") loadBookmarks();
+            else loadFeed();
+        }
+
+        function togglePostMenu(id) {
+            const menu = $("pmenu-" + id);
+            const wasHidden = menu.classList.contains("hidden");
+            document.querySelectorAll(".post-menu").forEach(m => m.classList.add("hidden"));
+            if (wasHidden) menu.classList.remove("hidden");
+        }
+        function menuAction(id) { document.querySelectorAll(".post-menu").forEach(m => m.classList.add("hidden")); }
+        document.addEventListener("click", e => {
+            if (!e.target.closest(".post-menu-wrap")) {
+                document.querySelectorAll(".post-menu").forEach(m => m.classList.add("hidden"));
+            }
+        });
+
+        async function deletePost(id) {
+            if (!confirm("Are you sure you want to delete this post?")) return;
+            try {
+                await api("/api/posts/" + id, "DELETE");
+                toast("Post deleted");
+                refreshPostList();
+            } catch (e) { alert(e.message); }
+        }
+
+        function startEdit(id) {
+            $("ptext-" + id).classList.add("hidden");
+            $("editBox-" + id).classList.remove("hidden");
+            $("editText-" + id).focus();
+        }
+        function cancelEdit(id) {
+            $("ptext-" + id).classList.remove("hidden");
+            $("editBox-" + id).classList.add("hidden");
+        }
+        function pickEditGrad(id, sw) {
+            document.querySelectorAll("#egrad-" + id + " .grad-swatch").forEach(x => x.classList.remove("sel"));
+            sw.classList.add("sel");
+        }
+        async function saveEdit(id) {
+            const text = $("editText-" + id).value.trim();
+            if (!text) return toast("Post content is required");
+            const sel = document.querySelector(`#egrad-${id} .grad-swatch.sel`);
+            try {
+                await api("/api/posts/" + id, "PUT", { content: text, gradient: sel ? sel.dataset.g : "" });
+                cancelEdit(id);
+                refreshPostList();
+                toast("Post updated");
             } catch (e) { alert(e.message); }
         }
 
@@ -1113,18 +1477,44 @@
                     $("headerDot").classList.remove("hidden");
                     $("bnBadge").textContent = state.unread; $("bnBadge").classList.remove("hidden");
                 }
-                const u = d.user;
+const u = d.user;
+                const fullName = [d.first_name, d.last_name].filter(Boolean).join(" ") || u.name || u.username;
                 $("pAvatar").style.background = u.avatar_color;
-                $("pAvatar").textContent = (u.name || "?")[0].toUpperCase();
+                $("pAvatar").textContent = (fullName || "?")[0].toUpperCase();
                 $("pCover").style.background = "linear-gradient(135deg," + u.avatar_color + ", #c084fc, #f0abfc)";
-                $("pName").innerHTML = esc(u.name) + verified(u);
+                $("pName").innerHTML = esc(fullName) + verified(u);
                 $("pUsername").textContent = "@" + u.username;
-                $("pBio").textContent = u.bio || "No bio yet.";
+                const pt = $("pTitle");
+                if (d.profession) { pt.textContent = d.profession; pt.classList.remove("hidden"); } else { pt.classList.add("hidden"); }
+                $("pBio").textContent = d.bio || "";
                 $("pPosts").textContent = d.posts;
                 $("pFollowers").textContent = d.followers;
                 $("pFollowing").textContent = d.following;
-                $("editName").value = u.name || "";
-                $("editBio").value = u.bio || "";
+                $("pSince").textContent = d.since || "";
+                const setDet = (id, val) => {
+                    const el = $(id);
+                    if (val) { el.hidden = false; el.textContent = val; }
+                    else { el.hidden = true; el.textContent = "-"; }
+                };
+                setDet("pEmail", d.email);
+                setDet("pPhone", d.phone);
+                if (d.website) {
+                    const w = $("pWebsite");
+                    w.hidden = false;
+                    w.textContent = d.website;
+                    w.href = d.website.includes("://") ? d.website : "https://" + d.website;
+                } else { $("pWebsite").hidden = true; }
+                setDet("pAddress", d.address);
+                setDet("pCountry", d.country);
+                $("editFirst").value = d.first_name || "";
+                $("editLast").value = d.last_name || "";
+                $("editEmail").value = d.email || "";
+                $("editPhone").value = d.phone || "";
+                $("editTitle").value = d.profession || "";
+                $("editWebsite").value = d.website || "";
+                $("editAddress").value = d.address || "";
+                $("editCountry").value = d.country || "";
+                $("editBio").value = d.bio || "";
                 const posts = await api("/api/users/" + u.id + "/posts", "GET");
                 $("myPosts").innerHTML = posts.posts.length
                     ? posts.posts.map(postCard).join("")
@@ -1136,9 +1526,21 @@
         $("editBtn").onclick = () => $("editCard").classList.toggle("hidden");
         $("saveProfile").onclick = async () => {
             try {
-                await api("/api/profile", "POST", { name: $("editName").value, bio: $("editBio").value });
+                await api("/api/profile", "POST", {
+                    first_name: $("editFirst").value,
+                    last_name: $("editLast").value,
+                    email: $("editEmail").value,
+                    phone: $("editPhone").value,
+                    profession: $("editTitle").value,
+                    website: $("editWebsite").value,
+                    address: $("editAddress").value,
+                    country: $("editCountry").value,
+                    bio: $("editBio").value,
+                });
                 $("editCard").classList.add("hidden");
-                loadMe();
+                loadMe(); loadFeed(); renderStories();
+                if (state.user) state.user = { ...state.user, first_name: $("editFirst").value, last_name: $("editLast").value, profession: $("editTitle").value, website: $("editWebsite").value };
+                $("amName").innerHTML = esc([$("editFirst").value, $("editLast").value].filter(Boolean).join(" ") || state.user.name) + verified(state.user);
             } catch (e) { alert(e.message); }
         };
 

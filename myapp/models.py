@@ -7,6 +7,14 @@ class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)
     password_hash: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+    phone: str = ""
+    profession: str = ""
+    address: str = ""
+    country: str = ""
+    website: str = ""
     name: str = ""
     bio: str = ""
     avatar_color: str = "#6366f1"
@@ -18,6 +26,7 @@ class User(SQLModel, table=True):
 class Post(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
+    parent_id: int | None = Field(default=None, index=True)
     content: str
     gradient: str = Field(default="linear-gradient(135deg,#8364E8,#D397FA)")
     created_at: datetime = Field(default_factory=datetime.utcnow)

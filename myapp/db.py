@@ -26,3 +26,35 @@ try:
     SQLModel.metadata.create_all(engine)
 except Exception:
     pass
+
+try:
+    from sqlalchemy import text
+
+    NEW_COLUMNS = {
+        "user": [
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "profession",
+            "address",
+            "country",
+            "website",
+        ],
+        "post": ["parent_id"],
+    }
+    for table, cols in NEW_COLUMNS.items():
+        with engine.connect() as conn:
+            existing = {
+                row[1]
+                for row in conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            }
+        for col in cols:
+            if col not in existing:
+                col_def = "INTEGER" if col == "parent_id" else "VARCHAR DEFAULT ''"
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
+                    )
+except Exception:
+    pass
