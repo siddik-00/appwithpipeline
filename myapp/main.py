@@ -482,7 +482,7 @@ async def me(
     unread = len(
         db.exec(
             select(Notification).where(
-Notification.user_id == user.id, ~Notification.read
+                Notification.user_id == user.id, ~Notification.read
             )
         ).all()
     )
@@ -626,11 +626,15 @@ async def get_stories(
     for s in expired:
         db.delete(s)
     if expired_ids:
-        for v in db.exec(select(StoryView).where(StoryView.story_id.in_(expired_ids))).all():
+        for v in db.exec(
+            select(StoryView).where(StoryView.story_id.in_(expired_ids))
+        ).all():
             db.delete(v)
     db.commit()
     stories = db.exec(
-        select(Story).where(Story.created_at >= cutoff).order_by(Story.created_at.desc())
+        select(Story)
+        .where(Story.created_at >= cutoff)
+        .order_by(Story.created_at.desc())
     ).all()
     counts = dict(
         db.exec(
@@ -689,8 +693,7 @@ async def view_story(
     db.commit()
     count = len(
         db.exec(
-            select(StoryView)
-            .where(
+            select(StoryView).where(
                 StoryView.story_id == story_id, StoryView.user_id != story.user_id
             )
         ).all()
@@ -1064,9 +1067,7 @@ async def get_notifications(
 @app.post("/api/notifications/read")
 async def mark_read(user: User = Depends(require_user), db: Session = Depends(get_db)):
     notifs = db.exec(
-        select(Notification).where(
-Notification.user_id == user.id, ~Notification.read
-        )
+        select(Notification).where(Notification.user_id == user.id, ~Notification.read)
     ).all()
     for n in notifs:
         n.read = True
@@ -1078,7 +1079,9 @@ Notification.user_id == user.id, ~Notification.read
 
 
 @app.get("/api/messages/threads")
-async def get_threads(user: User = Depends(require_user), db: Session = Depends(get_db)):
+async def get_threads(
+    user: User = Depends(require_user), db: Session = Depends(get_db)
+):
     all_messages = db.exec(
         select(Message).where(
             (Message.sender_id == user.id) | (Message.receiver_id == user.id)
@@ -1224,7 +1227,10 @@ async def update_avatar(
         raise HTTPException(status_code=400, detail="Image required")
     if len(avatar_url) > 20_000_000:
         raise HTTPException(status_code=400, detail="Image is too large")
-    if not (avatar_url.startswith("data:image/") or avatar_url.startswith(("http://", "https://"))):
+    if not (
+        avatar_url.startswith("data:image/")
+        or avatar_url.startswith(("http://", "https://"))
+    ):
         raise HTTPException(status_code=400, detail="Invalid image")
     user.avatar_url = avatar_url
     db.add(user)
