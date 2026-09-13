@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -6,6 +6,7 @@ from fastapi import Body, Cookie, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pwdlib import PasswordHash
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from myapp.db import engine
@@ -14,9 +15,11 @@ from myapp.models import (
     Comment,
     Follow,
     Like,
+    Message,
     Notification,
     Post,
     Story,
+    StoryView,
     User,
 )
 
@@ -107,12 +110,12 @@ def seed_demo_data():
         ]
         posts_by_username = {
             "masud": [
-                "We are hiring! Looking for passionate developers to join our team. ðŸŒŸ",
-                "Thankful to our amazing community for the constant support and feedback! ðŸ™Œ",
+                "We are hiring! Looking for passionate developers to join our team. 🌟",
+                "Thankful to our amazing community for the constant support and feedback! 🙌",
                 "Big milestone reached for StarConnect. The journey is just beginning!",
             ],
             "nusrat": [
-                "5 marketing tips that instantly boosted engagement for my clients ðŸ“ˆ",
+                "5 marketing tips that instantly boosted engagement for my clients 📈",
                 "Morning routine of top performers: 30 min reading + 10 min planning.",
             ],
             "tanvir": [
@@ -187,12 +190,12 @@ def seed_demo_data():
             (
                 users["nusrat"].id,
                 all_posts[0].id,
-                "Congrats Masud, this is amazing! ðŸŽ‰",
+                "Congrats Masud, this is amazing! 🎉",
             ),
             (
                 users["tanvir"].id,
                 all_posts[0].id,
-                "I would love to join. Let's grow together ðŸš€",
+                "I would love to join. Let's grow together 🚀",
             ),
             (users["masud"].id, all_posts[1].id, "Very useful tips, thank you Nusrat!"),
         ]
@@ -229,11 +232,11 @@ def seed_demo_data():
         stories = [
             (
                 "masud",
-                "Big announcement coming! ðŸ”¥",
+                "Big announcement coming! 🔥",
                 "linear-gradient(135deg,#6200EE,#D397FA)",
             ),
-            ("nusrat", "Daily tip below ðŸ‘‡", "linear-gradient(135deg,#FF0F7B,#F89B29)"),
-            ("tanvir", "Coding at night ðŸ’»", "linear-gradient(135deg,#006EFF,#00D68F)"),
+            ("nusrat", "Daily tip below 👇", "linear-gradient(135deg,#FF0F7B,#F89B29)"),
+            ("tanvir", "Coding at night 💻", "linear-gradient(135deg,#006EFF,#00D68F)"),
             ("sadia", "Career Q&A today!", "linear-gradient(135deg,#8B5CF6,#EC4899)"),
         ]
         for username, content, grad in stories:
@@ -479,7 +482,7 @@ async def me(
     unread = len(
         db.exec(
             select(Notification).where(
-                Notification.user_id == user.id, not Notification.read
+Notification.user_id == user.id, Notification.read == False
             )
         ).all()
     )
@@ -617,7 +620,36 @@ async def trending(
 async def get_stories(
     user: User | None = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    stories = db.exec(select(Story).order_by(Story.created_at.desc())).all()
+    cutoff = datetime.now() - timedelta(minutes=5)
+    expired = db.exec(select(Story).where(Story.created_at < cutoff)).all()
+    expired_ids = [s.id for s in expired]
+    for s in expired:
+        db.delete(s)
+    if expired_ids:
+        for v in db.exec(select(StoryView).where(StoryView.story_id.in_(expired_ids))).all():
+            db.delete(v)
+    db.commit()
+    stories = db.exec(
+        select(Story).where(Story.created_at >= cutoff).order_by(Story.created_at.desc())
+    ).all()
+    counts = {
+        sid: cnt
+        for sid, cnt in db.exec(
+            select(StoryView.story_id, func.count(StoryView.id))
+            .join(Story, Story.id == StoryView.story_id)
+            .where(StoryView.user_id != Story.user_id)
+            .group_by(StoryView.story_id)
+        ).all()
+    }
+    my_viewed_ids = (
+        set(
+            db.exec(
+                select(StoryView.story_id).where(StoryView.user_id == user.id)
+            ).all()
+        )
+        if user
+        else set()
+    )
     return {
         "stories": [
             {
@@ -625,11 +657,46 @@ async def get_stories(
                 "content": s.content,
                 "gradient": s.gradient,
                 "time": s.created_at.strftime("%H:%M"),
+                "ts": s.created_at.timestamp(),
+                "viewed": s.id in my_viewed_ids,
+                "view_count": counts.get(s.id, 0),
+                "mine": bool(user and s.user_id == user.id),
                 "author": public_user(db.get(User, s.user_id)),
             }
             for s in stories
         ]
     }
+
+
+@app.post("/api/stories/{story_id}/view")
+async def view_story(
+    story_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    story = db.get(Story, story_id)
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    cutoff = datetime.now() - timedelta(minutes=5)
+    if not story.created_at or story.created_at < cutoff:
+        raise HTTPException(status_code=404, detail="Story expired")
+    existing = db.exec(
+        select(StoryView).where(
+            StoryView.story_id == story_id, StoryView.user_id == user.id
+        )
+    ).first()
+    if not existing:
+        db.add(StoryView(story_id=story_id, user_id=user.id))
+    db.commit()
+    count = len(
+        db.exec(
+            select(StoryView)
+            .where(
+                StoryView.story_id == story_id, StoryView.user_id != story.user_id
+            )
+        ).all()
+    )
+    return {"ok": True, "view_count": count, "viewed": True}
 
 
 @app.post("/api/posts")
@@ -999,11 +1066,129 @@ async def get_notifications(
 async def mark_read(user: User = Depends(require_user), db: Session = Depends(get_db)):
     notifs = db.exec(
         select(Notification).where(
-            Notification.user_id == user.id, not Notification.read
+            Notification.user_id == user.id, Notification.read == False
         )
     ).all()
     for n in notifs:
         n.read = True
+    db.commit()
+    return {"ok": True}
+
+
+# ---------- Messages ----------
+
+
+@app.get("/api/messages/threads")
+async def get_threads(user: User = Depends(require_user), db: Session = Depends(get_db)):
+    all_messages = db.exec(
+        select(Message).where(
+            (Message.sender_id == user.id) | (Message.receiver_id == user.id)
+        )
+    ).all()
+    other_ids: set[int] = set()
+    for m in all_messages:
+        other_ids.add(m.receiver_id if m.sender_id == user.id else m.sender_id)
+    threads = []
+    for oid in other_ids:
+        other = db.get(User, oid)
+        if not other:
+            continue
+        mine = [
+            m
+            for m in all_messages
+            if (m.sender_id == user.id and m.receiver_id == oid)
+            or (m.sender_id == oid and m.receiver_id == user.id)
+        ]
+        mine.sort(key=lambda m: m.created_at)
+        last = mine[-1]
+        threads.append(
+            {
+                "other": public_user(other),
+                "other_online": other.online,
+                "last": last.content,
+                "last_time": last.created_at.strftime("%Y-%m-%d %H:%M"),
+                "last_ts": last.created_at.timestamp(),
+                "unread": sum(1 for m in mine if m.sender_id == oid and not m.read),
+            }
+        )
+    threads.sort(key=lambda t: t.get("last_ts") or 0, reverse=True)
+    return {"threads": threads}
+
+
+@app.get("/api/messages/{user_id}")
+async def get_messages(
+    user_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)
+):
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    msgs = db.exec(
+        select(Message)
+        .where(
+            ((Message.sender_id == user.id) & (Message.receiver_id == user_id))
+            | ((Message.sender_id == user_id) & (Message.receiver_id == user.id))
+        )
+        .order_by(Message.created_at.asc())
+    ).all()
+    return {
+        "other": public_user(target),
+        "messages": [
+            {
+                "id": m.id,
+                "me": m.sender_id == user.id,
+                "content": m.content,
+                "time": m.created_at.strftime("%H:%M"),
+            }
+            for m in msgs
+        ],
+    }
+
+
+@app.post("/api/messages/{user_id}")
+async def send_message(
+    user_id: int,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.id == user.id:
+        raise HTTPException(status_code=400, detail="Cannot message yourself")
+    content = (body.get("content") or "").strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Message required")
+    if len(content) > 2000:
+        raise HTTPException(status_code=400, detail="Message too long")
+    m = Message(sender_id=user.id, receiver_id=user_id, content=content)
+    db.add(m)
+    db.commit()
+    db.refresh(m)
+    return {
+        "ok": True,
+        "message": {
+            "id": m.id,
+            "me": True,
+            "content": m.content,
+            "time": m.created_at.strftime("%H:%M"),
+        },
+    }
+
+
+@app.post("/api/messages/{user_id}/read")
+async def mark_messages_read(
+    user_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)
+):
+    msgs = db.exec(
+        select(Message).where(
+            Message.sender_id == user_id,
+            Message.receiver_id == user.id,
+            Message.read == False,
+        )
+    ).all()
+    for m in msgs:
+        m.read = True
     db.commit()
     return {"ok": True}
 
@@ -1046,7 +1231,7 @@ async def update_avatar(
     db.add(user)
     post = Post(
         user_id=user.id,
-        content="ðŸ–¼ï¸ Updated my profile picture",
+        content="🖼️ Updated my profile picture",
         gradient="linear-gradient(135deg,#6200EE,#D397FA)",
         image=avatar_url,
     )

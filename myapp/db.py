@@ -8,9 +8,11 @@ from myapp.models import (  # noqa: F401  (ensure tables registered)
     Comment,
     Follow,
     Like,
+    Message,
     Notification,
     Post,
     Story,
+    StoryView,
     User,
 )
 

@@ -71,11 +71,27 @@ class Story(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
 
+class StoryView(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    story_id: int = Field(index=True, foreign_key="story.id")
+    user_id: int = Field(index=True, foreign_key="user.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
 class Notification(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
     actor_id: int | None = Field(default=None, foreign_key="user.id")
     type: str
     message: str
+    read: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class Message(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    sender_id: int = Field(index=True, foreign_key="user.id")
+    receiver_id: int = Field(index=True, foreign_key="user.id")
+    content: str
     read: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.now)
