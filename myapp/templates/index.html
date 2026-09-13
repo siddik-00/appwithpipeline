@@ -231,6 +231,25 @@
         }
         .update-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,58,237,.4); }
         .update-btn:active { transform: scale(.97); }
+        .photo-btn {
+            border: 1.5px solid var(--border); background: var(--bg-alt); color: var(--text);
+            padding: 7px 14px; border-radius: var(--radius-full); cursor: pointer;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            transition: all .2s ease; white-space: nowrap;
+        }
+        .photo-btn:hover { border-color: var(--primary-light); color: var(--primary); background: var(--card); }
+        .post-media { margin-top: 12px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-light); }
+        .post-media img { width: 100%; max-height: 500px; object-fit: cover; display: block; }
+        #imgPreviewWrap { position: relative; margin-top: 10px; display: inline-block; }
+        #imgPreview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 1.5px solid var(--border); display: block; }
+        .img-del {
+            position: absolute; top: -8px; right: -8px; width: 24px; height: 24px;
+            border-radius: 50%; border: none; background: #dc2626; color: #fff;
+            font-size: 15px; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .img-del:hover { background: #b91c1c; }
+        .share-img { max-width: 90px; max-height: 90px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid var(--border-light); }
 
         .edit-box { padding: 14px 8px 0; }
         .edit-box textarea {
@@ -419,6 +438,7 @@
             font-family: inherit;
         }
         .c-edit:hover { color: var(--primary); background: rgba(124,58,237,.12); }
+        .c-edit.c-del:hover { color: #dc2626; background: rgba(220,38,38,.12); }
 
         /* Comments */
         .comments { padding: 4px 20px 18px; }
@@ -431,6 +451,14 @@
         }
         .comment-input input:focus { border-color: var(--primary-light); background: var(--card); box-shadow: 0 0 0 3px rgba(124,58,237,.06); }
         .comment-input input::placeholder { color: var(--muted); }
+        .comment-send {
+            flex-shrink: 0; border: none; cursor: pointer; padding: 0 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; border-radius: var(--radius-full); font-weight: 700; font-size: 14px;
+            font-family: inherit; transition: all .2s ease;
+        }
+        .comment-send:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(124,58,237,.35); }
+        .comment-send:active { transform: scale(.96); }
         .comment-item { display: flex; gap: 12px; margin-top: 14px; }
         .comment-item .avatar { width: 34px; height: 34px; font-size: 13px; }
         .comment-bubble {
@@ -777,9 +805,17 @@
                                 <textarea id="composeText" placeholder="Share a thought with your community..." rows="2"></textarea>
                             </div>
                             <div class="composer-footer">
-                                <div class="grad-picker" id="gradPicker"></div>
+                                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                    <button type="button" class="photo-btn" onclick="$('imgInput').click()">&#128247; Photo</button>
+                                    <div class="grad-picker" id="gradPicker"></div>
+                                </div>
                                 <button class="update-btn" id="composeBtn">Post</button>
                             </div>
+                            <div class="hidden" id="imgPreviewWrap" style="position:relative; margin-top:12px; display:inline-block;">
+                                <img id="imgPreview" alt="Photo preview">
+                                <button class="img-del" id="imgClear" title="Remove photo" type="button">&times;</button>
+                            </div>
+                            <input type="file" id="imgInput" accept="image/*" class="hidden" onchange="onPickImage(this)">
                         </div>
                     </div>
                     <div class="card" id="feedList"></div>
@@ -1047,17 +1083,49 @@
             });
         }
 
+        let selImg = "";
+        function onPickImage(input) {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            if (!f.type.startsWith("image/")) { toast("Please choose an image"); return; }
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxW = 1080;
+                    const scale = Math.min(1, maxW / img.width);
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
+                    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                    selImg = canvas.toDataURL("image/jpeg", 0.8);
+                    $("imgPreview").src = selImg;
+                    $("imgPreviewWrap").classList.remove("hidden");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(f);
+            input.value = "";
+        }
+        function clearPostImage() {
+            selImg = "";
+            $("imgPreview").src = "";
+            $("imgPreviewWrap").classList.add("hidden");
+        }
+        $("imgClear").onclick = clearPostImage;
+
         $("composeText").addEventListener("keydown", e => {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); postIt(); }
         });
         $("composeBtn").onclick = postIt;
         async function postIt() {
             const text = $("composeText").value.trim();
-            if (!text) { toast("Please write something first"); $("composeText").focus(); return; }
+            if (!text && !selImg) { toast("Please write something or add a photo"); $("composeText").focus(); return; }
             $("composeBtn").disabled = true;
             try {
-                await api("/api/posts", "POST", { content: text, gradient: selGrad });
+                await api("/api/posts", "POST", { content: text, gradient: selGrad, image: selImg || null });
                 $("composeText").value = "";
+                clearPostImage();
                 toast("Post published!");
                 await loadFeed(); loadMe(); renderStories();
                 window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1173,6 +1241,7 @@
                     </div>` : ""}
                 </div>
                 <div class="post-text" id="ptext-${p.id}" ${p.content ? "" : 'style="display:none"'}>${esc(p.content)}</div>
+                ${p.image ? `<div class="post-media"><img src="${p.image}" alt="Post photo" loading="lazy"></div>` : ""}
                 ${p.shared ? `
                 <div class="share-box">
                     <div class="share-head">&#128257; ${esc(state.user && p.author.id === state.user.id ? "You" : p.author.name)} shared a post</div>
@@ -1181,6 +1250,7 @@
                         <div class="share-card-body">
                             <div class="name">${esc(p.shared.author.name)}${verifyHtml(p.shared.author)}</div>
                             <div class="time">@${esc(p.shared.author.username)} &middot; ${esc(p.shared.time)}</div>
+                            ${p.shared.image ? `<img class="share-img" src="${p.shared.image}" alt="Shared photo">` : ""}
                             <div class="share-text">${esc(p.shared.content)}</div>
                         </div>
                     </div>
@@ -1216,6 +1286,7 @@
                     <div class="comment-input">
                         ${avHtml(p.author, "")}
                         <input id="cin-${p.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')addComment(${p.id})">
+                        <button class="comment-send" onclick="addComment(${p.id})" title="Post comment">Post</button>
                     </div>
                     <div id="clist-${p.id}">${comments}</div>
                 </div>
@@ -1280,7 +1351,7 @@
                 ${avHtml(c.author, "")}
                 <div class="comment-bubble" data-content="${esc(c.content)}">
                     <span class="n">${esc(c.author.name)}${verifyHtml(c.author)}</span><span class="t">${c.time}</span>
-                    ${isMine ? `<button class="c-edit" title="Edit comment" onclick="startEditComment(${c.id})">&#9998;&#65039;</button>` : ""}<br>${esc(c.content)}
+                    ${isMine ? `<button class="c-edit" title="Edit comment" onclick="startEditComment(${c.id})">&#9998;&#65039;</button><button class="c-edit c-del" title="Delete comment" onclick="deleteComment(${c.id})">&#128465;&#65039;</button>` : ""}<br>${esc(c.content)}
                 </div>
             </div>`;
         }
@@ -1316,6 +1387,18 @@
         function cancelEditComment(cid) {
             const bubble = document.querySelector(`#comment-${cid} .comment-bubble`);
             if (bubble && window.__ce && window.__ce[cid]) bubble.innerHTML = window.__ce[cid];
+        }
+        async function deleteComment(cid) {
+            if (!confirm("Delete this comment?")) return;
+            try {
+                await api("/api/comments/" + cid, "DELETE");
+                const item = $("comment-" + cid);
+                if (item) {
+                    const cnt = item.closest(".post-card") && item.closest(".post-card").querySelector("[id^='ccount-']");
+                    if (cnt) cnt.textContent = (parseInt(cnt.textContent, 10) || 0) - 1;
+                    item.remove();
+                }
+            } catch (e) { alert(e.message); }
         }
         async function saveEditComment(cid) {
             const inp = $("ce-" + cid);

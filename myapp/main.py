@@ -391,6 +391,7 @@ def post_dict(
         "id": p.id,
         "content": p.content,
         "gradient": p.gradient,
+        "image": p.image or None,
         "time": p.created_at.strftime("%Y-%m-%d %H:%M"),
         "author": public_user(author),
         "liked": liked,
@@ -549,6 +550,7 @@ def build_post(db: Session, p: Post, user: User | None) -> dict:
                 "id": parent.id,
                 "content": parent.content,
                 "gradient": parent.gradient,
+                "image": parent.image or None,
                 "time": parent.created_at.strftime("%Y-%m-%d %H:%M"),
                 "author": public_user(db.get(User, parent.user_id)),
             }
@@ -638,10 +640,12 @@ async def create_post(
     if not content:
         raise HTTPException(status_code=400, detail="Post content required")
     gradient = body.get("gradient") or ""
+    image = (body.get("image") or "").strip() or None
     post = Post(
         user_id=user.id,
         content=content,
         gradient=gradient if gradient else "linear-gradient(135deg,#6200EE,#D397FA)",
+        image=image,
     )
     db.add(post)
     db.commit()
@@ -824,6 +828,24 @@ async def edit_comment(
         "time": comment.created_at.strftime("%Y-%m-%d %H:%M"),
         "author": public_user(author),
     }
+
+
+@app.delete("/api/comments/{comment_id}")
+async def delete_comment(
+    comment_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    comment = db.get(Comment, comment_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment.user_id != user.id:
+        raise HTTPException(
+            status_code=403, detail="You can only delete your own comments"
+        )
+    db.delete(comment)
+    db.commit()
+    return {"ok": True}
 
 
 @app.post("/api/posts/{post_id}/comments")

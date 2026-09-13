@@ -41,7 +41,7 @@ try:
             "country",
             "website",
         ],
-        "post": ["parent_id"],
+        "post": ["parent_id", "image"],
     }
     for table, cols in NEW_COLUMNS.items():
         with engine.connect() as conn:
@@ -51,7 +51,13 @@ try:
             }
         for col in cols:
             if col not in existing:
-                col_def = "INTEGER" if col == "parent_id" else "VARCHAR DEFAULT ''"
+                col_def = (
+                    "INTEGER"
+                    if col == "parent_id"
+                    else "TEXT DEFAULT ''"
+                    if col == "image"
+                    else "VARCHAR DEFAULT ''"
+                )
                 with engine.begin() as conn:
                     conn.execute(
                         text(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
