@@ -482,7 +482,7 @@ async def me(
     unread = len(
         db.exec(
             select(Notification).where(
-Notification.user_id == user.id, Notification.read == False
+Notification.user_id == user.id, ~Notification.read
             )
         ).all()
     )
@@ -632,15 +632,14 @@ async def get_stories(
     stories = db.exec(
         select(Story).where(Story.created_at >= cutoff).order_by(Story.created_at.desc())
     ).all()
-    counts = {
-        sid: cnt
-        for sid, cnt in db.exec(
+    counts = dict(
+        db.exec(
             select(StoryView.story_id, func.count(StoryView.id))
             .join(Story, Story.id == StoryView.story_id)
             .where(StoryView.user_id != Story.user_id)
             .group_by(StoryView.story_id)
         ).all()
-    }
+    )
     my_viewed_ids = (
         set(
             db.exec(
@@ -1066,7 +1065,7 @@ async def get_notifications(
 async def mark_read(user: User = Depends(require_user), db: Session = Depends(get_db)):
     notifs = db.exec(
         select(Notification).where(
-            Notification.user_id == user.id, Notification.read == False
+Notification.user_id == user.id, ~Notification.read
         )
     ).all()
     for n in notifs:
@@ -1184,7 +1183,7 @@ async def mark_messages_read(
         select(Message).where(
             Message.sender_id == user_id,
             Message.receiver_id == user.id,
-            Message.read == False,
+            ~Message.read,
         )
     ).all()
     for m in msgs:
