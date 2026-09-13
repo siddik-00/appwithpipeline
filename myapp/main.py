@@ -683,7 +683,9 @@ async def delete_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     if post.user_id != user.id:
-        raise HTTPException(status_code=403, detail="You can only delete your own posts")
+        raise HTTPException(
+            status_code=403, detail="You can only delete your own posts"
+        )
     for like in db.exec(select(Like).where(Like.post_id == post_id)).all():
         db.delete(like)
     for comment in db.exec(select(Comment).where(Comment.post_id == post_id)).all():
@@ -805,7 +807,9 @@ async def edit_comment(
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
     if comment.user_id != user.id:
-        raise HTTPException(status_code=403, detail="You can only edit your own comments")
+        raise HTTPException(
+            status_code=403, detail="You can only edit your own comments"
+        )
     content = (body.get("content") or "").strip()
     if not content:
         raise HTTPException(status_code=400, detail="Comment required")
