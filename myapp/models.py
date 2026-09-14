@@ -30,7 +30,7 @@ class Post(SQLModel, table=True):
     parent_id: int | None = Field(default=None, index=True)
     content: str
     gradient: str = Field(default="linear-gradient(135deg,#8364E8,#D397FA)")
-    image: str | None = Field(default=None, max_length=20000000)
+    image: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.now)
 
 
