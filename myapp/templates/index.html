@@ -281,6 +281,28 @@
         body.dark .toast { background: #2d2548; }
         @media (min-width: 1050px) { .toast-wrap { bottom: 30px; } }
 
+        /* Guest login prompt */
+        .guest-login {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            bottom: 106px; z-index: 9000;
+            display: flex; align-items: center; gap: 16px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 18px; padding: 12px 14px 12px 18px;
+            box-shadow: 0 12px 32px rgba(0,0,0,.18);
+            max-width: min(460px, calc(100vw - 32px));
+            animation: popup .25s ease forwards;
+        }
+        .guest-login .gl-title { font-weight: 800; font-size: 14px; color: var(--text); }
+        .guest-login .gl-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+        .guest-login .gl-btns { display: flex; gap: 8px; flex-shrink: 0; }
+        .guest-login .gl-btns .pill-btn { padding: 9px 18px; font-size: 13px; }
+        @media (min-width: 1050px) { .guest-login { bottom: 36px; } }
+        @media (max-width: 600px) {
+            .guest-login { bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); flex-direction: column; gap: 10px; text-align: center; }
+            .guest-login .gl-btns { width: 100%; }
+            .guest-login .gl-btns .pill-btn { flex: 1; }
+        }
+
         /* Stories */
         .stories { display: flex; gap: 16px; overflow-x: auto; padding: 18px 20px; }
         .stories::-webkit-scrollbar { display: none; }
@@ -882,6 +904,16 @@
                         </div>
                     </div>
                     <div class="card" id="feedList"></div>
+                    <div class="guest-login hidden" id="guestLoginPrompt">
+                        <div class="gl-text">
+                            <div class="gl-title">Enjoying StarConnect?</div>
+                            <div class="gl-sub">Log in to connect, message &amp; grow</div>
+                        </div>
+                        <div class="gl-btns">
+                            <button class="pill-btn primary" id="glLogin">Login</button>
+                            <button class="pill-btn ghost" id="glSignup">Sign Up</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="view-notify" class="subview hidden">
@@ -1097,6 +1129,24 @@
             { key: "logout", ico: "&#8594;", label: "Logout" },
         ];
 
+        $("glLogin").onclick = () => openAuth("login");
+        $("glSignup").onclick = () => openAuth("signup");
+
+        function updateGuestPrompt() {
+            let show = !state.user && state.view === "home";
+            if (show) {
+                const cards = document.querySelectorAll("#feedList .post-card");
+                let threshold = 900;
+                if (cards.length) {
+                    const card = cards[Math.min(2, cards.length - 1)];
+                    threshold = card.getBoundingClientRect().top + window.scrollY;
+                }
+                show = window.scrollY + window.innerHeight > threshold + 120;
+            }
+            $("guestLoginPrompt").classList.toggle("hidden", !show);
+        }
+        window.addEventListener("scroll", updateGuestPrompt, { passive: true });
+
         function showApp(user) {
             state.user = user;
             $("view-auth").classList.add("hidden");
@@ -1114,6 +1164,7 @@
             initGradPicker();
             changeView("home");
             loadAll();
+            updateGuestPrompt();
         }
 
         function showGuest() {
@@ -1132,6 +1183,7 @@
             initGradPicker();
             changeView("home");
             loadFeed(); loadTrending(); loadSuggested(); renderStories();
+            updateGuestPrompt();
         }
 
         function openAuth(tab) {
@@ -1178,6 +1230,7 @@
             if (name === "home") renderStories();
             renderMenu();
             document.querySelectorAll(".bn-item").forEach(b => b.classList.toggle("active", b.dataset.bn === name));
+            updateGuestPrompt();
         }
 
         document.querySelectorAll(".bn-item").forEach(b => {
@@ -1412,6 +1465,7 @@
                     ? d.posts.map((p, i) => postCard(p, i)).join("")
                     : `<div class="empty">No posts yet. Be the first!</div>`;
             } catch (e) { $("feedList").innerHTML = `<div class="empty">Could not load feed</div>`; }
+            updateGuestPrompt();
         }
 
         function postCard(p, i) {
