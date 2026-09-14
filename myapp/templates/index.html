@@ -829,6 +829,8 @@
                                 <div class="am-name" id="amName">-</div>
                                 <div class="am-user" id="amUser">@-</div>
                             </div>
+                            <button class="am-item" id="amLogin">&#128274; Login</button>
+                            <button class="am-item" id="amSignup">&#9998; Sign Up</button>
                             <button class="am-item" id="amProfile">&#128100; My Profile</button>
                             <button class="am-item am-logout" id="amLogout">&#8594; Logout</button>
                         </div>
@@ -1105,10 +1107,41 @@
             fillAvatar("cAvatar", user, ah);
             $("amName").innerHTML = esc(user.name || user.username) + verified(user);
             $("amUser").textContent = "@" + user.username;
+            $("amLogin").style.display = "none";
+            $("amSignup").style.display = "none";
+            $("amProfile").style.display = "";
+            $("amLogout").style.display = "";
             initGradPicker();
             changeView("home");
             loadAll();
         }
+
+        function showGuest() {
+            state.user = null;
+            $("view-auth").classList.add("hidden");
+            $("view-app").classList.remove("hidden");
+            $("bottomNav").classList.remove("hidden");
+            fillAvatar("hAvatar", null, "?");
+            fillAvatar("cAvatar", null, "?");
+            $("amName").textContent = "Not signed in";
+            $("amUser").textContent = "Login or sign up to join";
+            $("amLogin").style.display = "";
+            $("amSignup").style.display = "";
+            $("amProfile").style.display = "none";
+            $("amLogout").style.display = "none";
+            initGradPicker();
+            changeView("home");
+            loadFeed(); loadTrending(); loadSuggested(); renderStories();
+        }
+
+        function openAuth(tab) {
+            closeAvatarMenu();
+            $("view-app").classList.add("hidden");
+            $("view-auth").classList.remove("hidden");
+            (tab === "signup" ? $("tabSignup") : $("tabLogin")).click();
+        }
+        $("amLogin").onclick = e => { e.stopPropagation(); openAuth("login"); };
+        $("amSignup").onclick = e => { e.stopPropagation(); openAuth("signup"); };
 
         function renderMenu() {
             const unreadBadge = state.unread || 0;
@@ -1128,6 +1161,7 @@
         }
 
         function changeView(name) {
+            if (!state.user && ["messages", "bookmarks", "notify", "profile"].includes(name)) { openAuth("login"); return; }
             if (name === "connect") name = "home";
             state.view = name;
             document.querySelectorAll(".subview").forEach(v => { v.classList.add("hidden"); v.classList.remove("active"); });
@@ -1252,6 +1286,7 @@
         });
         $("composeBtn").onclick = postIt;
         async function postIt() {
+            if (!state.user) { openAuth("login"); return; }
             const text = $("composeText").value.trim();
             if (!text && !selImg) { toast("Please write something or add a photo"); $("composeText").focus(); return; }
             $("composeBtn").disabled = true;
@@ -1297,6 +1332,7 @@
         setInterval(() => { if (!$("view-app").classList.contains("hidden")) renderStories(); }, 15000);
         function toggleStoryForm() { $("storyAddForm").classList.toggle("hidden"); }
         $("storyAddBtn").onclick = async () => {
+            if (!state.user) { openAuth("login"); return; }
             const text = $("storyText").value.trim();
             if (!text) return;
             try {
@@ -1899,8 +1935,8 @@ const u = d.user;
         (async () => {
             try {
                 const d = await api("/api/me", "GET");
-                if (d.user) { showApp(d.user); } else { $("view-auth").classList.remove("hidden"); }
-            } catch (e) { $("view-auth").classList.remove("hidden"); }
+                if (d.user) { showApp(d.user); } else { showGuest(); }
+            } catch (e) { showGuest(); }
         })();
     </script>
 </body>
