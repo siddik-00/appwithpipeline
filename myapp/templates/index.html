@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarConnect</title>
+    <title>SiddikConnect</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -282,34 +282,41 @@
         body.dark .toast { background: #2d2548; }
         @media (min-width: 1050px) { .toast-wrap { bottom: 30px; } }
 
-        /* Guest login prompt */
+        /* Guest login banner */
         .guest-login {
-            position: fixed; left: 50%; transform: translateX(-50%);
-            bottom: 106px; z-index: 9000;
-            display: flex; align-items: center; gap: 22px;
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 22px; padding: 20px 22px 20px 26px;
-            box-shadow: 0 16px 40px rgba(0,0,0,.25);
-            max-width: min(560px, calc(100vw - 32px));
-            animation: popup .25s ease forwards;
+            position: fixed; left: 0; right: 0; bottom: 0; width: 100%;
+            z-index: 9000;
+            display: flex; align-items: center; justify-content: center; gap: 22px;
+            background: linear-gradient(135deg, var(--card) 0%, var(--card) 55%, rgba(124,58,237,.07) 100%);
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -12px 40px rgba(0,0,0,.18);
+            padding: 22px 26px;
+            animation: slideUpG .25s ease forwards;
         }
-        .guest-login .gl-title { font-weight: 800; font-size: 17px; color: var(--text); }
+        @keyframes slideUpG { from { transform: translateY(100%); } to { transform: none; } }
+        .guest-login .gl-mark {
+            width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
+            background: var(--grad-cta); color: #fff; font-size: 22px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 14px rgba(124,58,237,.35);
+        }
+        .guest-login .gl-text { text-align: left; }
+        .guest-login .gl-title { font-weight: 800; font-size: 18px; color: var(--text); }
         .guest-login .gl-sub { font-size: 14px; color: var(--muted); margin-top: 3px; }
-        .guest-login .gl-btns { display: flex; gap: 10px; flex-shrink: 0; }
-        .guest-login .gl-btns .pill-btn { padding: 13px 26px; font-size: 15px; }
+        .guest-login .gl-btns { display: flex; gap: 12px; flex-shrink: 0; }
+        .guest-login .gl-btns .pill-btn { padding: 14px 32px; font-size: 15px; }
         .guest-login .gl-close {
-            position: absolute; top: 8px; right: 8px;
-            width: 30px; height: 30px; border-radius: 50%;
+            position: absolute; top: 12px; right: 12px;
+            width: 32px; height: 32px; border-radius: 50%;
             background: var(--bg-alt); color: var(--muted); font-size: 13px;
             display: flex; align-items: center; justify-content: center;
             transition: all .2s ease;
         }
         .guest-login .gl-close:hover { background: rgba(239,68,68,.12); color: var(--danger); }
-        @media (min-width: 1050px) { .guest-login { bottom: 42px; } }
-        @media (max-width: 600px) {
-            .guest-login { bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); flex-direction: column; gap: 12px; text-align: center; padding: 18px; }
-            .guest-login .gl-btns { width: 100%; }
-            .guest-login .gl-btns .pill-btn { flex: 1; }
+        @media (max-width: 640px) {
+            .guest-login { bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); gap: 14px; padding: 18px 16px 20px; flex-wrap: wrap; }
+            .guest-login .gl-btns { width: 100%; justify-content: center; }
+            .guest-login .gl-btns .pill-btn { flex: 1; padding: 13px 20px; }
         }
 
         /* In-app confirmation modal */
@@ -699,6 +706,17 @@
             position: absolute; color: rgba(255,255,255,.1); font-size: 80px;
             animation: float 8s ease-in-out infinite;
         }
+        .auth-back {
+            position: absolute; top: 18px; left: 18px; z-index: 10;
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 18px; border-radius: 999px;
+            background: rgba(255,255,255,.18); color: #fff;
+            font-size: 14px; font-weight: 700;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,.25);
+            transition: all .2s ease;
+        }
+        .auth-back:hover { background: rgba(255,255,255,.32); transform: translateY(-1px); }
         @keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-25px) rotate(5deg); } }
         .auth-card {
             width: 100%; max-width: 560px; background: var(--card);
@@ -829,13 +847,14 @@
 
     <!-- AUTH -->
     <div id="view-auth" class="auth-screen">
+        <button class="auth-back" id="authBack" title="Back to feed">&#8592; Back</button>
         <span class="bg-star" style="top:10%; left:8%;">&#9733;</span>
         <span class="bg-star" style="bottom:15%; right:10%; animation-delay:2s; font-size:50px;">&#9733;</span>
         <span class="bg-star" style="top:60%; left:15%; animation-delay:4s; font-size:40px;">&#9733;</span>
         <div class="auth-card">
             <div class="logo">
                 <div class="star">&#9733;</div>
-                <div><span class="logo-text">StarConnect<small>Connect &middot; Share &middot; Inspire</small></span></div>
+                <div><span class="logo-text">SiddikConnect<small>Connect &middot; Share &middot; Inspire</small></span></div>
             </div>
             <h2>Welcome</h2>
             <p class="sub">Join our growing community</p>
@@ -868,7 +887,7 @@
     <div id="view-app" class="hidden">
         <header class="header">
             <div class="header-inner">
-                <div class="logo" id="headerLogo" style="cursor:pointer;" title="Refresh"><div class="star">&#9733;</div><div><span class="logo-text">StarConnect<small>Social for you</small></span></div></div>
+                <div class="logo" id="headerLogo" style="cursor:pointer;" title="Refresh"><div class="star">&#9733;</div><div><span class="logo-text">SiddikConnect<small>Social for you</small></span></div></div>
                 <div class="search-wrap">
                     <div class="search"><span class="ico">&#128269;</span><input type="text" id="searchBox" placeholder="Search users or posts..."></div>
                 </div>
@@ -939,8 +958,9 @@
                     <div class="card" id="feedList"></div>
                     <div class="guest-login hidden" id="guestLoginPrompt">
                         <button class="gl-close" id="glClose" title="Close">&#10005;</button>
+                        <div class="gl-mark">&#9733;</div>
                         <div class="gl-text">
-                            <div class="gl-title">Enjoying StarConnect?</div>
+                            <div class="gl-title">Enjoying SiddikConnect?</div>
                             <div class="gl-sub">Log in to connect, message &amp; grow</div>
                         </div>
                         <div class="gl-btns">
@@ -1178,21 +1198,37 @@
         $("glSignup").onclick = () => openAuth("signup");
 
         let glDismissed = false;
+        let glWasShown = false;
         function updateGuestPrompt() {
             let show = !glDismissed && !state.user && state.view === "home";
             if (show) {
-                const cards = document.querySelectorAll("#feedList .post-card");
-                let threshold = 900;
-                if (cards.length) {
-                    const card = cards[Math.min(2, cards.length - 1)];
-                    threshold = card.getBoundingClientRect().top + window.scrollY;
-                }
-                show = window.scrollY + window.innerHeight > threshold + 120;
+                const rect = $("feedList").getBoundingClientRect();
+                const mid = rect.top + window.scrollY + rect.height * 0.5;
+                show = window.scrollY + window.innerHeight > mid && !!$("feedList").querySelector(".post-card");
             }
             $("guestLoginPrompt").classList.toggle("hidden", !show);
+            if (show && !glWasShown && $("view-auth").classList.contains("hidden")) beep();
+            glWasShown = show;
             if ($("view-auth").classList.contains("hidden")) {
                 document.body.classList.toggle("no-scroll", show);
             }
+        }
+        let __audioCtx = null;
+        function beep() {
+            try {
+                if (!__audioCtx) __audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const c = __audioCtx;
+                if (c.state === "suspended") c.resume();
+                const o = c.createOscillator(), g = c.createGain();
+                o.type = "sine"; o.frequency.value = 660;
+                g.gain.value = 0.0001;
+                o.connect(g); g.connect(c.destination);
+                const t = c.currentTime;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.05, t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+                o.start(t); o.stop(t + 0.25);
+            } catch (e) {}
         }
         $("glClose").onclick = () => {
             glDismissed = true;
@@ -1249,6 +1285,16 @@
             $("view-auth").classList.remove("hidden");
             (tab === "signup" ? $("tabSignup") : $("tabLogin")).click();
         }
+        $("authBack").onclick = e => {
+            e.stopPropagation();
+            glDismissed = true;
+            closeAvatarMenu();
+            $("view-auth").classList.add("hidden");
+            $("view-app").classList.remove("hidden");
+            $("bottomNav").classList.remove("hidden");
+            document.body.classList.remove("no-scroll");
+            updateGuestPrompt();
+        };
         $("amLogin").onclick = e => { e.stopPropagation(); openAuth("login"); };
         $("amSignup").onclick = e => { e.stopPropagation(); openAuth("signup"); };
 

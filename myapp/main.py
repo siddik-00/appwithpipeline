@@ -48,13 +48,13 @@ def seed_demo_data():
                 "first_name": "Masud",
                 "last_name": "Rahman",
                 "name": "Masud Rahman",
-                "bio": "Building StarConnect Asia",
-                "email": "masud@starconnect.app",
+                "bio": "Building SiddikConnect Asia",
+                "email": "masud@siddikconnect.app",
                 "phone": "+880 1711-000001",
                 "profession": "Founder & CEO",
                 "address": "Gulshan, Dhaka",
                 "country": "Bangladesh",
-                "website": "starconnect.app",
+"website": "siddikconnect.app",
                 "avatar_color": "#6200EE",
                 "online": True,
                 "verified": True,
@@ -112,7 +112,7 @@ def seed_demo_data():
             "masud": [
                 "We are hiring! Looking for passionate developers to join our team. 🌟",
                 "Thankful to our amazing community for the constant support and feedback! 🙌",
-                "Big milestone reached for StarConnect. The journey is just beginning!",
+                "Big milestone reached for SiddikConnect. The journey is just beginning!",
             ],
             "nusrat": [
                 "5 marketing tips that instantly boosted engagement for my clients 📈",
@@ -300,12 +300,12 @@ def backfill_profiles():
         "masud": {
             "first_name": "Masud",
             "last_name": "Rahman",
-            "email": "masud@starconnect.app",
+            "email": "masud@siddikconnect.app",
             "phone": "+880 1711-000001",
             "profession": "Founder & CEO",
             "address": "Gulshan, Dhaka",
             "country": "Bangladesh",
-            "website": "starconnect.app",
+            "website": "siddikconnect.app",
         },
         "nusrat": {
             "first_name": "Nusrat",
@@ -607,7 +607,7 @@ async def trending(
     user: User | None = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     topics = [
-        {"tag": "#StarConnect", "posts": "12.5k posts"},
+        {"tag": "#SiddikConnect", "posts": "12.5k posts"},
         {"tag": "#FastAPI", "posts": "8.2k posts"},
         {"tag": "#CareerTips", "posts": "5.1k posts"},
         {"tag": "#BengaliTech", "posts": "3.4k posts"},
