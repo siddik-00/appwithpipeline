@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from myapp.models import (  # noqa: F401  (ensure tables registered)
     StoryView,
     User,
 )
+
+logger = logging.getLogger("uvicorn.error")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 
@@ -35,10 +38,16 @@ else:
     DATABASE_URL = f"sqlite:///{_DB_DIR / 'app.db'}"
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
-try:
-    SQLModel.metadata.create_all(engine)
-except Exception:
-    pass
+
+def init_db() -> None:
+    try:
+        SQLModel.metadata.create_all(engine)
+    except Exception:
+        logger.exception("Failed to create database tables")
+        raise
+
+
+init_db()
 
 if DATABASE_URL.lower().startswith("sqlite"):
     try:
