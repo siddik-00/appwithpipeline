@@ -17,8 +17,16 @@ from myapp.models import (  # noqa: F401  (ensure tables registered)
 )
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+def _engine_url(url: str) -> str:
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    return url
+
 if DATABASE_URL:
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(_engine_url(DATABASE_URL))
 else:
     _DB_DIR = Path("myapp")
     _DB_DIR.mkdir(parents=True, exist_ok=True)
