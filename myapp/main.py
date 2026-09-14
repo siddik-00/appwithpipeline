@@ -54,7 +54,7 @@ def seed_demo_data():
                 "profession": "Founder & CEO",
                 "address": "Gulshan, Dhaka",
                 "country": "Bangladesh",
-"website": "siddikconnect.app",
+                "website": "siddikconnect.app",
                 "avatar_color": "#6200EE",
                 "online": True,
                 "verified": True,
