@@ -590,8 +590,8 @@ def build_posts(db: Session, posts: list[Post], user: User | None) -> list[dict]
     my_likes = {}
     if user:
         my_likes = {
-            l.post_id: l
-            for l in db.exec(
+            like.post_id: like
+            for like in db.exec(
                 select(Like).where(Like.post_id.in_(ids), Like.user_id == user.id)
             ).all()
         }
