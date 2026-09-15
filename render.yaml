@@ -1,19 +1,21 @@
 services:
   - type: web
-    name: starconnect
-    runtime: python
+    name: siddikconnect
+    runtime: node
     plan: free
     autoDeployTrigger: commit
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn myapp.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     healthCheckPath: /
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: starconnect-db
+          name: siddikconnect-db
           property: connectionString
 
 databases:
-  - name: starconnect-db
-    databaseName: starconnect
+  - name: siddikconnect-db
+    databaseName: siddikconnect
     plan: free

@@ -13,6 +13,9 @@ coverage.xml
 .netlify
 test.db
 myapp/app.db
+data/
+node_modules/
+*.log
 log.txt
 Pipfile.lock
 env3.*
