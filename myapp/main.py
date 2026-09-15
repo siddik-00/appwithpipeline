@@ -476,15 +476,18 @@ async def me(
 ):
     if not user:
         return {"user": None}
-    followers = len(db.exec(select(Follow).where(Follow.following_id == user.id)).all())
-    following = len(db.exec(select(Follow).where(Follow.follower_id == user.id)).all())
-    posts = len(db.exec(select(Post).where(Post.user_id == user.id)).all())
-    unread = len(
-        db.exec(
-            select(Notification).where(
-                Notification.user_id == user.id, ~Notification.read
-            )
-        ).all()
+    followers = count_rows(
+        db, select(func.count(Follow.id)).where(Follow.following_id == user.id)
+    )
+    following = count_rows(
+        db, select(func.count(Follow.id)).where(Follow.follower_id == user.id)
+    )
+    posts = count_rows(db, select(func.count(Post.id)).where(Post.user_id == user.id))
+    unread = count_rows(
+        db,
+        select(func.count(Notification.id)).where(
+            Notification.user_id == user.id, ~Notification.read
+        ),
     )
     return {
         "user": public_user(user),
@@ -508,10 +511,10 @@ async def me(
 # ---------- Posts ----------
 
 
-def build_comments(db: Session, post_id: int) -> list:
+def build_comments(db: Session, post: Post, user: User | None = None) -> list:
     comments = db.exec(
         select(Comment)
-        .where(Comment.post_id == post_id)
+        .where(Comment.post_id == post.id)
         .order_by(Comment.created_at.asc())
     ).all()
     result = []
@@ -523,6 +526,8 @@ def build_comments(db: Session, post_id: int) -> list:
                 "content": c.content,
                 "time": c.created_at.strftime("%Y-%m-%d %H:%M"),
                 "author": public_user(c_author),
+                "can_delete": user is not None
+                and (c.user_id == user.id or post.user_id == user.id),
             }
         )
     return result
@@ -546,7 +551,7 @@ def build_post(db: Session, p: Post, user: User | None) -> dict:
             )
         ).first()
     )
-    comment_list = build_comments(db, p.id)
+    comment_list = build_comments(db, p, user)
     shared = None
     if p.parent_id:
         parent = db.get(Post, p.parent_id)
@@ -571,6 +576,115 @@ def build_post(db: Session, p: Post, user: User | None) -> dict:
     )
 
 
+def build_posts(db: Session, posts: list[Post], user: User | None) -> list[dict]:
+    if not posts:
+        return []
+    ids = [p.id for p in posts]
+    posts_by_id = {p.id: p for p in posts}
+    users = {
+        u.id: u
+        for u in db.exec(
+            select(User).where(User.id.in_({p.user_id for p in posts}))
+        ).all()
+    }
+    my_likes = {}
+    if user:
+        my_likes = {
+            l.post_id: l
+            for l in db.exec(
+                select(Like).where(Like.post_id.in_(ids), Like.user_id == user.id)
+            ).all()
+        }
+    like_counts = dict(
+        db.exec(
+            select(Like.post_id, func.count(Like.id))
+            .where(Like.post_id.in_(ids))
+            .group_by(Like.post_id)
+        ).all()
+    )
+    my_marks = set()
+    if user:
+        my_marks = {
+            b.post_id
+            for b in db.exec(
+                select(Bookmark.post_id).where(
+                    Bookmark.post_id.in_(ids), Bookmark.user_id == user.id
+                )
+            ).all()
+        }
+    comments = db.exec(
+        select(Comment)
+        .where(Comment.post_id.in_(ids))
+        .order_by(Comment.created_at.asc())
+    ).all()
+    c_users = {}
+    c_ids = {c.user_id for c in comments}
+    if c_ids:
+        c_users = {
+            u.id: u for u in db.exec(select(User).where(User.id.in_(c_ids))).all()
+        }
+    comments_by_post: dict[int, list] = {}
+    for c in comments:
+        ca = c_users.get(c.user_id)
+        comments_by_post.setdefault(c.post_id, []).append(
+            {
+                "id": c.id,
+                "content": c.content,
+                "time": c.created_at.strftime("%Y-%m-%d %H:%M"),
+                "author": public_user(ca) if ca else None,
+                "can_delete": user is not None
+                and (c.user_id == user.id or posts_by_id[c.post_id].user_id == user.id),
+            }
+        )
+    parent_ids = {p.parent_id for p in posts if p.parent_id}
+    parent_map: dict[int, Post] = {}
+    parent_author_pub: dict[int, dict] = {}
+    if parent_ids:
+        parents = db.exec(select(Post).where(Post.id.in_(parent_ids))).all()
+        pa_ids = {pa.user_id for pa in parents}
+        pa_users = {}
+        if pa_ids:
+            pa_users = {
+                u.id: u for u in db.exec(select(User).where(User.id.in_(pa_ids))).all()
+            }
+        parent_map = {pa.id: pa for pa in parents}
+        parent_author_pub = {
+            pa.id: public_user(pa_users.get(pa.user_id)) for pa in parents
+        }
+    result = []
+    for p in posts:
+        my_like = my_likes.get(p.id)
+        shared = None
+        if p.parent_id and p.parent_id in parent_map:
+            par = parent_map[p.parent_id]
+            shared = {
+                "id": par.id,
+                "content": par.content,
+                "gradient": par.gradient,
+                "image": par.image or None,
+                "time": par.created_at.strftime("%Y-%m-%d %H:%M"),
+                "author": parent_author_pub.get(par.id),
+            }
+        result.append(
+            post_dict(
+                p,
+                users.get(p.user_id),
+                liked=bool(my_like),
+                like_count=like_counts.get(p.id, 0),
+                comments=comments_by_post.get(p.id, []),
+                reaction=my_like.reaction if my_like else "",
+                bookmarked=p.id in my_marks,
+                shared=shared,
+            )
+        )
+    return result
+
+
+def count_rows(db: Session, stmt) -> int:
+    result = db.exec(stmt).all()
+    return result[0] if result else 0
+
+
 @app.get("/api/feed")
 async def get_feed(
     user: User | None = Depends(get_current_user), db: Session = Depends(get_db)
@@ -578,7 +692,7 @@ async def get_feed(
     posts = db.exec(select(Post).order_by(Post.id.desc())).all()
     return {
         "user": public_user(user) if user else None,
-        "posts": [build_post(db, p, user) for p in posts],
+        "posts": build_posts(db, posts, user),
     }
 
 
@@ -594,10 +708,13 @@ async def search(
         users = db.exec(
             select(User).where(User.username.contains(q) | User.name.contains(q))
         ).all()
-        posts = db.exec(select(Post)).all()
-        matched = [p for p in posts if q in p.content.lower()]
+        matched = db.exec(
+            select(Post)
+            .where(func.lower(Post.content).contains(q))
+            .order_by(Post.id.desc())
+        ).all()
         results = [{"type": "user", **public_user(u)} for u in users] + [
-            {"type": "post", **build_post(db, p, user)} for p in matched
+            {"type": "post", **d} for d in build_posts(db, matched, user)
         ]
     return {"results": results, "q": q}
 
@@ -653,6 +770,14 @@ async def get_stories(
         if user
         else set()
     )
+    s_author_ids = {s.user_id for s in stories}
+    s_authors = {}
+    if s_author_ids:
+        s_authors = {
+            u.id: u
+            for u in db.exec(select(User).where(User.id.in_(s_author_ids))).all()
+        }
+    author_pub = {uid: public_user(u) for uid, u in s_authors.items()}
     return {
         "stories": [
             {
@@ -664,7 +789,7 @@ async def get_stories(
                 "viewed": s.id in my_viewed_ids,
                 "view_count": counts.get(s.id, 0),
                 "mine": bool(user and s.user_id == user.id),
-                "author": public_user(db.get(User, s.user_id)),
+                "author": author_pub.get(s.user_id),
             }
             for s in stories
         ]
@@ -691,12 +816,11 @@ async def view_story(
     if not existing:
         db.add(StoryView(story_id=story_id, user_id=user.id))
     db.commit()
-    count = len(
-        db.exec(
-            select(StoryView).where(
-                StoryView.story_id == story_id, StoryView.user_id != story.user_id
-            )
-        ).all()
+    count = count_rows(
+        db,
+        select(func.count(StoryView.id)).where(
+            StoryView.story_id == story_id, StoryView.user_id != story.user_id
+        ),
     )
     return {"ok": True, "view_count": count, "viewed": True}
 
@@ -808,7 +932,7 @@ async def toggle_like(
                 f"{user.name or user.username} reacted {reaction} to your post",
             )
     db.commit()
-    count = len(db.exec(select(Like).where(Like.post_id == post_id)).all())
+    count = count_rows(db, select(func.count(Like.id)).where(Like.post_id == post_id))
     return {"liked": liked, "like_count": count, "reaction": reaction}
 
 
@@ -910,7 +1034,8 @@ async def delete_comment(
     comment = db.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    if comment.user_id != user.id:
+    post = db.get(Post, comment.post_id)
+    if comment.user_id != user.id and not (post and post.user_id == user.id):
         raise HTTPException(
             status_code=403, detail="You can only delete your own comments"
         )
@@ -963,13 +1088,18 @@ async def list_users(user: User = Depends(require_user), db: Session = Depends(g
         f.following_id
         for f in db.exec(select(Follow).where(Follow.follower_id == user.id)).all()
     }
+    post_counts = dict(
+        db.exec(
+            select(Post.user_id, func.count(Post.id))
+            .where(Post.user_id.in_([u.id for u in users]))
+            .group_by(Post.user_id)
+        ).all()
+    )
     result = []
     for u in users:
         data = public_user(u)
         data["following"] = u.id in following_ids
-        data["post_count"] = len(
-            db.exec(select(Post).where(Post.user_id == u.id)).all()
-        )
+        data["post_count"] = post_counts.get(u.id, 0)
         result.append(data)
     return {"users": result}
 
@@ -1014,10 +1144,14 @@ async def connections(
         for f in db.exec(select(Follow).where(Follow.follower_id == user.id)).all()
     ]
     people = []
-    for uid in following_ids:
-        u = db.get(User, uid)
-        if u:
-            people.append(public_user(u))
+    if following_ids:
+        users_by_id = {
+            u.id: u
+            for u in db.exec(select(User).where(User.id.in_(following_ids))).all()
+        }
+        people = [
+            public_user(users_by_id[uid]) for uid in following_ids if uid in users_by_id
+        ]
     return {"users": people}
 
 
@@ -1028,11 +1162,14 @@ async def bookmarks(user: User = Depends(require_user), db: Session = Depends(ge
         .where(Bookmark.user_id == user.id)
         .order_by(Bookmark.created_at.desc())
     ).all()
+    post_ids = [m.post_id for m in marks]
     posts = []
-    for m in marks:
-        post = db.get(Post, m.post_id)
-        if post:
-            posts.append(build_post(db, post, user))
+    if post_ids:
+        by_id = {
+            p.id: p for p in db.exec(select(Post).where(Post.id.in_(post_ids))).all()
+        }
+        existing = [by_id[i] for i in post_ids if i in by_id]
+        posts = build_posts(db, existing, user)
     return {"posts": posts}
 
 
@@ -1048,9 +1185,15 @@ async def get_notifications(
         .where(Notification.user_id == user.id)
         .order_by(Notification.created_at.desc())
     ).all()
+    actor_ids = {n.actor_id for n in notifs if n.actor_id}
+    actors = {}
+    if actor_ids:
+        actors = {
+            u.id: u for u in db.exec(select(User).where(User.id.in_(actor_ids))).all()
+        }
     result = []
     for n in notifs:
-        actor = db.get(User, n.actor_id) if n.actor_id else None
+        actor = actors.get(n.actor_id) if n.actor_id else None
         result.append(
             {
                 "id": n.id,
@@ -1091,8 +1234,13 @@ async def get_threads(
     for m in all_messages:
         other_ids.add(m.receiver_id if m.sender_id == user.id else m.sender_id)
     threads = []
-    for oid in other_ids:
-        other = db.get(User, oid)
+    others = {}
+    if other_ids:
+        others = {
+            u.id: u for u in db.exec(select(User).where(User.id.in_(other_ids))).all()
+        }
+    for oid in sorted(other_ids):
+        other = others.get(oid)
         if not other:
             continue
         mine = [
@@ -1210,9 +1358,28 @@ async def user_posts(
     posts = db.exec(
         select(Post).where(Post.user_id == user_id).order_by(Post.id.desc())
     ).all()
+    followers = count_rows(
+        db, select(func.count(Follow.id)).where(Follow.following_id == target.id)
+    )
+    following = count_rows(
+        db, select(func.count(Follow.id)).where(Follow.follower_id == target.id)
+    )
+    is_following = False
+    if user and user.id != target.id:
+        is_following = bool(
+            db.exec(
+                select(Follow).where(
+                    Follow.follower_id == user.id, Follow.following_id == target.id
+                )
+            ).first()
+        )
     return {
         "user": public_user(target),
-        "posts": [build_post(db, p, user) for p in posts],
+        "posts": build_posts(db, posts, user),
+        "followers": followers,
+        "following": following,
+        "is_following": is_following,
+        "since": target.created_at.strftime("%b %Y") if target.created_at else "",
     }
 
 
