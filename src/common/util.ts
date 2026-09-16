@@ -42,5 +42,6 @@ export function publicUser(u: User | null): Record<string, unknown> | null {
     avatar_color: u.avatar_color,
     avatar_url: u.avatar_url || null,
     verified: u.verified,
+    message_cost: Math.round((u.message_cost || 0) * 100) / 100,
   };
 }

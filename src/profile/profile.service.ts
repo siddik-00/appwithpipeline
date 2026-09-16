@@ -53,6 +53,14 @@ export class ProfileService {
     if ('website' in body) user.website = str('website');
     if ('name' in body) user.name = str('name');
     if ('bio' in body) user.bio = str('bio');
+    if ('message_cost' in body) {
+      const cost = Number(body.message_cost);
+      if (!Number.isFinite(cost) || cost <= 0)
+        httpBadge(HttpStatus.BAD_REQUEST, 'Enter a valid message cost');
+      if (cost > 10000)
+        httpBadge(HttpStatus.BAD_REQUEST, 'Message cost is too large');
+      user.message_cost = Math.round(cost * 100) / 100;
+    }
     const full = `${user.first_name} ${user.last_name}`.trim();
     if (full) user.name = full;
     else if (!user.name) user.name = user.username;

@@ -1,6 +1,8 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
+export const MESSAGE_COST_BDT = Number(process.env.MESSAGE_COST_BDT || 2);
+
 export function httpBadge(status: HttpStatus, detail: string): never {
   throw new HttpException({ detail }, status);
 }
