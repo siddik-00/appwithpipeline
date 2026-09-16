@@ -9,7 +9,7 @@ import { Post } from '../entities/post.entity';
 import { Notification } from '../entities/notification.entity';
 import { FriendRequest } from '../entities/friend-request.entity';
 import { AVATAR_COLORS, fmtMonthYear, publicUser } from '../common/util';
-import { httpBadge } from '../common/config';
+import { httpBadge, MESSAGE_COST_BDT } from '../common/config';
 
 @Injectable()
 export class AuthService {
@@ -129,6 +129,12 @@ export class AuthService {
       posts,
       friends,
       unread,
+      wallet: {
+        balance: Math.round((user.balance || 0) * 100) / 100,
+        total_spent: Math.round((user.total_spent || 0) * 100) / 100,
+        cost_per_message:
+          Math.round((user.message_cost || MESSAGE_COST_BDT) * 100) / 100,
+      },
     };
   }
 }

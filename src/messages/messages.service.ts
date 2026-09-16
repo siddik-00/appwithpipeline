@@ -4,7 +4,7 @@ import { In, Repository } from 'typeorm';
 import { Message } from '../entities/message.entity';
 import { User } from '../entities/user.entity';
 import { fmtDateTime, fmtTime, publicUser } from '../common/util';
-import { httpBadge } from '../common/config';
+import { httpBadge, MESSAGE_COST_BDT } from '../common/config';
 import { AuthService } from '../auth/auth.service';
 
 type Thread = {
@@ -95,15 +95,32 @@ export class MessagesService {
     const content = ((body.content as string) || '').trim();
     if (!content) httpBadge(HttpStatus.BAD_REQUEST, 'Message required');
     if (content.length > 2000) httpBadge(HttpStatus.BAD_REQUEST, 'Message too long');
-    const m = await this.messages.save(
-      this.messages.create({
-        sender_id: user.id,
-        receiver_id: userId,
-        content,
-      }),
-    );
+    const cost = Math.round((target.message_cost || MESSAGE_COST_BDT) * 100) / 100;
+    const m = await this.messages.manager.transaction(async (em) => {
+      const sender = await em.findOne(User, { where: { id: user.id } });
+      if (!sender)
+        httpBadge(HttpStatus.UNAUTHORIZED, 'Not authenticated');
+      if ((sender.balance || 0) < cost)
+        httpBadge(
+          HttpStatus.PAYMENT_REQUIRED,
+          `Insufficient wallet balance (Tk ${cost} needed to message). Add BDT (Taka) from your Profile -> Wallet.`,
+        );
+      sender.balance = Math.round((sender.balance - cost) * 100) / 100;
+      sender.total_spent =
+        Math.round(((sender.total_spent || 0) + cost) * 100) / 100;
+      await em.save(User, sender);
+      return em.save(
+        em.create(Message, {
+          sender_id: user.id,
+          receiver_id: userId,
+          content,
+        }),
+      );
+    });
     return {
       ok: true,
+      cost,
+      balance: Math.round((user.balance - cost) * 100) / 100,
       message: {
         id: m.id,
         me: true,

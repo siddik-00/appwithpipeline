@@ -54,6 +54,15 @@ export class User {
   @Column({ default: false })
   online: boolean;
 
+  @Column({ type: 'real', default: 2 })
+  message_cost: number;
+
+  @Column({ type: 'real', default: 0 })
+  balance: number;
+
+  @Column({ type: 'real', default: 0 })
+  total_spent: number;
+
   @Column({ type: 'datetime', default: () => "datetime('now')" })
   created_at: Date;
 }
