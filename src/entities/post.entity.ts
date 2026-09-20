@@ -22,6 +22,6 @@ export class Post {
   @Column({ type: 'text', nullable: true })
   image: string | null;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }

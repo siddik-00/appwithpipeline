@@ -14,6 +14,6 @@ export class Bookmark {
   @Column()
   user_id: number;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }
