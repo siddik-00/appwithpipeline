@@ -14,7 +14,10 @@ export function buildDbConfig(): TypeOrmModuleOptions {
       type: 'postgres',
       url: url.replace(/^postgres:\/\//, 'postgresql://'),
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
+      migrations: ['dist/database/migrations/*.js'],
+      migrationsRun: true,
+      migrationsTableName: 'migrations',
     };
   }
   return {

@@ -63,6 +63,6 @@ export class User {
   @Column({ type: 'real', default: 0 })
   total_spent: number;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }

@@ -15,6 +15,6 @@ export class Story {
   @Column({ default: 'linear-gradient(135deg,#6200EE,#D397FA)' })
   gradient: string;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }

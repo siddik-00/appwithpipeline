@@ -17,6 +17,6 @@ export class FriendRequest {
   @Column({ length: 20, default: 'pending' })
   status: string;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }

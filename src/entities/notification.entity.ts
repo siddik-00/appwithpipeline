@@ -22,6 +22,6 @@ export class Notification {
   @Column({ default: false })
   read: boolean;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }

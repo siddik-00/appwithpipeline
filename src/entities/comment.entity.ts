@@ -17,6 +17,6 @@ export class Comment {
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ type: 'datetime', default: () => "datetime('now')" })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }
