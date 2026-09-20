@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siddikconnect
+  namespace: siddikconnect
+  labels:
+    app: siddikconnect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: siddikconnect
+  template:
+    metadata:
+      labels:
+        app: siddikconnect
+    spec:
+      containers:
+        - name: siddikconnect
+          image: siddikconnect:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: siddikconnect-config
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: siddikconnect-data
