@@ -20,7 +20,7 @@ export class StoriesService {
 
   async getStories(token?: string) {
     const user = await this.auth.getCurrentUser(token);
-    const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
     const expiredRows = await this.stories.find();
     const toDelete = expiredRows.filter(
@@ -94,7 +94,7 @@ export class StoriesService {
     const user = await this.auth.requireUser(token);
     const story = await this.stories.findOne({ where: { id: storyId } });
     if (!story) httpBadge(HttpStatus.NOT_FOUND, 'Story not found');
-    const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000);
     if (!story!.created_at || new Date(story!.created_at).getTime() < cutoff.getTime())
       httpBadge(HttpStatus.NOT_FOUND, 'Story expired');
     const existing = await this.storyViews.findOne({
