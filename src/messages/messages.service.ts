@@ -1,11 +1,25 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { randomBytes } from 'crypto';
 import { Message } from '../entities/message.entity';
 import { User } from '../entities/user.entity';
 import { fmtDateTime, fmtTime, publicUser } from '../common/util';
 import { httpBadge, MESSAGE_COST_BDT } from '../common/config';
 import { AuthService } from '../auth/auth.service';
+
+const ATTACH_DISPLAY: Record<string, string> = {
+  image: '\u{1F4F7} Photo',
+  video: '\u{1F3AC} Video',
+  document: '\u{1F4C4} PDF',
+};
+const ATTACH_LIMIT: Record<string, number> = {
+  image: 25 * 1024 * 1024,
+  video: 60 * 1024 * 1024,
+  document: 20 * 1024 * 1024,
+};
 
 type Thread = {
   other: Record<string, unknown>;
@@ -54,7 +68,9 @@ export class MessagesService {
       threads.push({
         other: publicUser(other)!,
         other_online: other.online,
-        last: last.content,
+        last: last.content
+          ? last.content
+          : ATTACH_DISPLAY[last.attachment_type || ''] || '',
         last_time: fmtDateTime(new Date(last.created_at)),
         last_ts: Math.floor(new Date(last.created_at).getTime() / 1000),
         unread: mine.filter((m) => m.sender_id === oid && !m.read).length,
@@ -81,6 +97,8 @@ export class MessagesService {
         id: m.id,
         me: m.sender_id === user.id,
         content: m.content,
+        attachment_type: m.attachment_type || null,
+        attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
       })),
     };
@@ -125,6 +143,86 @@ export class MessagesService {
         id: m.id,
         me: true,
         content: m.content,
+        attachment_type: m.attachment_type || null,
+        attachment_url: m.attachment_url || null,
+        time: fmtTime(new Date(m.created_at)),
+      },
+    };
+  }
+
+  private saveAttachment(type: string, dataUrl: string): string {
+    const match = /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9.+-]+);base64,(.+)$/s.exec(
+      dataUrl,
+    );
+    if (!match) httpBadge(HttpStatus.BAD_REQUEST, 'Invalid file data');
+    const mime = match![1];
+    const b64 = match![2];
+    const limit = ATTACH_LIMIT[type];
+    const bytes = Math.floor((b64.length * 3) / 4);
+    if (bytes > limit)
+      httpBadge(
+        HttpStatus.BAD_REQUEST,
+        `File too large (max ${Math.round(limit / 1024 / 1024)}MB)`,
+      );
+    const ext = mime === 'image/png' ? 'png' : mime === 'image/jpeg' || mime === 'image/jpg' ? 'jpg' : mime === 'image/webp' ? 'webp' : mime === 'image/gif' ? 'gif' : mime === 'video/mp4' ? 'mp4' : mime === 'video/webm' ? 'webm' : mime === 'video/quicktime' ? 'mov' : mime === 'application/pdf' ? 'pdf' : '';
+    if (!ext) httpBadge(HttpStatus.BAD_REQUEST, 'Unsupported file type');
+    const dir = join(process.cwd(), 'public', 'uploads');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const name = `${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`;
+    writeFileSync(join(dir, name), Buffer.from(b64, 'base64'));
+    return `/uploads/${name}`;
+  }
+
+  async sendAttachment(
+    userId: number,
+    body: Record<string, unknown>,
+    token?: string,
+  ) {
+    const user = await this.auth.requireUser(token);
+    const target = await this.users.findOne({ where: { id: userId } });
+    if (!target) httpBadge(HttpStatus.NOT_FOUND, 'User not found');
+    if (target.id === user.id)
+      httpBadge(HttpStatus.BAD_REQUEST, 'Cannot message yourself');
+    const type = (body.attachment_type as string) || '';
+    if (!['image', 'video', 'document'].includes(type))
+      httpBadge(HttpStatus.BAD_REQUEST, 'Attachment must be image, video or PDF');
+    const data = (body.data as string) || '';
+    if (!data) httpBadge(HttpStatus.BAD_REQUEST, 'File data required');
+    const url = this.saveAttachment(type, data);
+    const content = ((body.content as string) || '').trim();
+    const cost = Math.round((target.message_cost || MESSAGE_COST_BDT) * 100) / 100;
+    const m = await this.messages.manager.transaction(async (em) => {
+      const sender = await em.findOne(User, { where: { id: user.id } });
+      if (!sender) httpBadge(HttpStatus.UNAUTHORIZED, 'Not authenticated');
+      if ((sender.balance || 0) < cost)
+        httpBadge(
+          HttpStatus.PAYMENT_REQUIRED,
+          `Insufficient wallet balance (Tk ${cost} needed to message). Add BDT (Taka) from your Profile -> Wallet.`,
+        );
+      sender.balance = Math.round((sender.balance - cost) * 100) / 100;
+      sender.total_spent =
+        Math.round(((sender.total_spent || 0) + cost) * 100) / 100;
+      await em.save(User, sender);
+      return em.save(
+        em.create(Message, {
+          sender_id: user.id,
+          receiver_id: userId,
+          content,
+          attachment_type: type,
+          attachment_url: url,
+        }),
+      );
+    });
+    return {
+      ok: true,
+      cost,
+      balance: Math.round((user.balance - cost) * 100) / 100,
+      message: {
+        id: m.id,
+        me: true,
+        content: m.content,
+        attachment_type: m.attachment_type || null,
+        attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
       },
     };

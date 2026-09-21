@@ -37,6 +37,15 @@ export class MessagesController {
     return this.messages.sendMessage(id, body, this.token(req));
   }
 
+  @Post('/api/messages/:id/attachment')
+  sendAttachment(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: Record<string, unknown>,
+    @Req() req: Request,
+  ) {
+    return this.messages.sendAttachment(id, body, this.token(req));
+  }
+
   @Post('/api/messages/:id/read')
   markRead(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.messages.markRead(id, this.token(req));

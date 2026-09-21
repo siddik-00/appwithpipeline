@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.use(cookieParser());
   // Allow large JSON bodies (profile avatars are base64 data URLs up to ~20MB)
-  app.useBodyParser('json', { limit: '25mb' });
+  app.useBodyParser('json', { limit: '100mb' });
   const port = Number(process.env.PORT || 8000);
   await app.listen(port);
   Logger.log(`SiddikConnect running on http://0.0.0.0:${port}`, 'Bootstrap');
