@@ -22,13 +22,14 @@ import { Follow } from './entities/follow.entity';
 import { Notification } from './entities/notification.entity';
 import { Story } from './entities/story.entity';
 import { FriendRequest } from './entities/friend-request.entity';
+import { CommentReaction } from './entities/comment-reaction.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: buildDbConfig,
     }),
-    TypeOrmModule.forFeature([User, Post, Like, Comment, Follow, Notification, Story, FriendRequest]),
+    TypeOrmModule.forFeature([User, Post, Like, Comment, Follow, Notification, Story, FriendRequest, CommentReaction]),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
     }),

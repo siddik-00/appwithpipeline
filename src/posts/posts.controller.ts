@@ -75,6 +75,15 @@ export class PostsController {
     return this.posts.editComment(id, body, this.token(req));
   }
 
+  @Post('/api/comments/:id/reaction')
+  toggleCommentReaction(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: Record<string, unknown>,
+    @Req() req: Request,
+  ) {
+    return this.posts.toggleCommentReaction(id, body, this.token(req));
+  }
+
   @Delete('/api/comments/:id')
   deleteComment(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.posts.deleteComment(id, this.token(req));

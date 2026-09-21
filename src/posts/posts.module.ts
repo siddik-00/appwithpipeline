@@ -7,6 +7,7 @@ import { User } from '../entities/user.entity';
 import { Like } from '../entities/like.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Comment } from '../entities/comment.entity';
+import { CommentReaction } from '../entities/comment-reaction.entity';
 import { Notification } from '../entities/notification.entity';
 
 @Module({
@@ -17,6 +18,7 @@ import { Notification } from '../entities/notification.entity';
       Like,
       Bookmark,
       Comment,
+      CommentReaction,
       Notification,
     ]),
   ],
