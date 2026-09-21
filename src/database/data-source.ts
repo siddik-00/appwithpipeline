@@ -11,6 +11,7 @@ import { StoryView } from '../entities/story-view.entity';
 import { FriendRequest } from '../entities/friend-request.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Message } from '../entities/message.entity';
+import { CommentReaction } from '../entities/comment-reaction.entity';
 
 const url = (process.env.DATABASE_URL || '').trim();
 
@@ -29,6 +30,7 @@ export default new DataSource({
     FriendRequest,
     Bookmark,
     Message,
+    CommentReaction,
   ],
   migrations: ['src/database/migrations/*.ts'],
   synchronize: false,

@@ -17,6 +17,12 @@ export class Message {
   @Column({ type: 'text' })
   content: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  attachment_type: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  attachment_url: string | null;
+
   @Column({ default: false })
   read: boolean;
 

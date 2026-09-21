@@ -7,9 +7,12 @@ import { Like } from '../entities/like.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Comment } from '../entities/comment.entity';
 import { Notification } from '../entities/notification.entity';
+import { CommentReaction } from '../entities/comment-reaction.entity';
 import { fmtDateTime, publicUser } from '../common/util';
 import { httpBadge } from '../common/config';
 import { AuthService } from '../auth/auth.service';
+
+const REACTIONS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 
 export type CommentDict = {
   id: number;
@@ -17,6 +20,8 @@ export type CommentDict = {
   time: string;
   author: Record<string, unknown> | null;
   can_delete: boolean;
+  reaction_count: number;
+  my_reaction: string;
 };
 
 export type PostDict = {
@@ -28,6 +33,7 @@ export type PostDict = {
   author: Record<string, unknown> | null;
   liked: boolean;
   reaction: string;
+  reactions: Record<string, number>;
   like_count: number;
   bookmarked: boolean;
   shared: Record<string, unknown> | null;
@@ -44,16 +50,31 @@ export class PostsService {
     private readonly bookmarks: Repository<Bookmark>,
     @InjectRepository(Comment)
     private readonly comments: Repository<Comment>,
+    @InjectRepository(CommentReaction)
+    private readonly commentReactions: Repository<CommentReaction>,
     @InjectRepository(Notification)
     private readonly notifications: Repository<Notification>,
     private readonly auth: AuthService,
   ) {}
 
-  private async buildComments(post: Post, user: User | null): Promise<CommentDict[]> {
+  private async buildComments(
+    post: Post,
+    user: User | null,
+  ): Promise<CommentDict[]> {
     const rows = await this.comments.find({
       where: { post_id: post.id },
       order: { created_at: 'ASC' },
     });
+    const rowIds = rows.map((c) => c.id);
+    const reactionRows = rowIds.length
+      ? await this.commentReactions.find({ where: { comment_id: In(rowIds) } })
+      : [];
+    const reactCounts = new Map<number, number>();
+    const myReacts = new Map<number, string>();
+    for (const cr of reactionRows) {
+      reactCounts.set(cr.comment_id, (reactCounts.get(cr.comment_id) || 0) + 1);
+      if (user && cr.user_id === user.id) myReacts.set(cr.comment_id, cr.reaction);
+    }
     const result: CommentDict[] = [];
     for (const c of rows) {
       const author = await this.users.findOne({ where: { id: c.user_id } });
@@ -66,6 +87,8 @@ export class PostsService {
           user &&
           (c.user_id === user.id || post.user_id === user.id)
         ),
+        reaction_count: reactCounts.get(c.id) || 0,
+        my_reaction: myReacts.get(c.id) || '',
       });
     }
     return result;
@@ -89,8 +112,13 @@ export class PostsService {
 
     const likeRows = await this.likes.find({ where: { post_id: In(ids) } });
     const likeCounts = new Map<number, number>();
+    const reactionTotals = new Map<number, Record<string, number>>();
     for (const l of likeRows) {
       likeCounts.set(l.post_id, (likeCounts.get(l.post_id) || 0) + 1);
+      const key = l.reaction || 'like';
+      const totals = reactionTotals.get(l.post_id) || {};
+      totals[key] = (totals[key] || 0) + 1;
+      reactionTotals.set(l.post_id, totals);
     }
 
     let myMarks = new Set<number>();
@@ -110,6 +138,21 @@ export class PostsService {
       ? await this.users.find({ where: { id: In(commentUserIds) } })
       : [];
     const commentUsers = new Map(commentUserRows.map((u) => [u.id, u]));
+    const commentReactRows = commentRows.length
+      ? await this.commentReactions.find({
+          where: { comment_id: In(commentRows.map((c) => c.id)) },
+        })
+      : [];
+    const commentReactCounts = new Map<number, number>();
+    const myCommentReacts = new Map<number, string>();
+    for (const cr of commentReactRows) {
+      commentReactCounts.set(
+        cr.comment_id,
+        (commentReactCounts.get(cr.comment_id) || 0) + 1,
+      );
+      if (user && cr.user_id === user.id)
+        myCommentReacts.set(cr.comment_id, cr.reaction);
+    }
     const commentsByPost = new Map<number, CommentDict[]>();
     for (const c of commentRows) {
       const author = commentUsers.get(c.user_id);
@@ -123,6 +166,8 @@ export class PostsService {
           (c.user_id === user.id ||
             postsById.get(c.post_id)?.user_id === user.id)
         ),
+        reaction_count: commentReactCounts.get(c.id) || 0,
+        my_reaction: myCommentReacts.get(c.id) || '',
       };
       if (!commentsByPost.has(c.post_id)) commentsByPost.set(c.post_id, []);
       commentsByPost.get(c.post_id)!.push(entry);
@@ -162,6 +207,7 @@ export class PostsService {
         author: publicUser(usersById.get(p.user_id) || null),
         liked: !!myLike,
         reaction: myLike ? myLike.reaction : '',
+        reactions: reactionTotals.get(p.id) || {},
         like_count: likeCounts.get(p.id) || 0,
         bookmarked: myMarks.has(p.id),
         shared,
@@ -213,6 +259,12 @@ export class PostsService {
     if (post!.user_id !== user.id)
       httpBadge(HttpStatus.FORBIDDEN, 'You can only delete your own posts');
     await this.likes.delete({ post_id: postId });
+    const postComments = await this.comments.find({
+      where: { post_id: postId },
+    });
+    const commentIds = postComments.map((c) => c.id);
+    if (commentIds.length)
+      await this.commentReactions.delete({ comment_id: In(commentIds) });
     await this.comments.delete({ post_id: postId });
     await this.bookmarks.delete({ post_id: postId });
     await this.posts.delete({ parent_id: postId });
@@ -224,7 +276,9 @@ export class PostsService {
     const user = await this.auth.requireUser(token);
     const post = await this.posts.findOne({ where: { id: postId } });
     if (!post) httpBadge(HttpStatus.NOT_FOUND, 'Post not found');
-    const reaction = (body?.reaction as string) || 'like';
+    const reaction = REACTIONS.includes((body?.reaction as string) || 'like')
+      ? (body?.reaction as string)
+      : 'like';
     const existing = await this.likes.findOne({
       where: { post_id: postId, user_id: user.id },
     });
@@ -341,6 +395,44 @@ export class PostsService {
     };
   }
 
+  async toggleCommentReaction(
+    commentId: number,
+    body: Record<string, unknown>,
+    token?: string,
+  ) {
+    const user = await this.auth.requireUser(token);
+    const comment = await this.comments.findOne({ where: { id: commentId } });
+    if (!comment) httpBadge(HttpStatus.NOT_FOUND, 'Comment not found');
+    const reaction = REACTIONS.includes((body?.reaction as string) || 'like')
+      ? (body?.reaction as string)
+      : 'like';
+    const existing = await this.commentReactions.findOne({
+      where: { comment_id: commentId, user_id: user.id },
+    });
+    let liked = true;
+    if (existing) {
+      if (existing.reaction === reaction) {
+        await this.commentReactions.delete(existing.id);
+        liked = false;
+      } else {
+        existing.reaction = reaction;
+        await this.commentReactions.save(existing);
+      }
+    } else {
+      await this.commentReactions.save(
+        this.commentReactions.create({
+          comment_id: commentId,
+          user_id: user.id,
+          reaction,
+        }),
+      );
+    }
+    const reactionCount = await this.commentReactions.count({
+      where: { comment_id: commentId },
+    });
+    return { liked, reaction_count: reactionCount, reaction };
+  }
+
   async deleteComment(commentId: number, token?: string) {
     const user = await this.auth.requireUser(token);
     const comment = await this.comments.findOne({ where: { id: commentId } });
@@ -348,6 +440,7 @@ export class PostsService {
     const post = await this.posts.findOne({ where: { id: comment!.post_id } });
     if (comment!.user_id !== user.id && !(post && post.user_id === user.id))
       httpBadge(HttpStatus.FORBIDDEN, 'You can only delete your own comments');
+    await this.commentReactions.delete({ comment_id: commentId });
     await this.comments.delete(commentId);
     return { ok: true };
   }

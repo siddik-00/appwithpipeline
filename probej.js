@@ -1,0 +1,12 @@
+const fs = require('fs');
+const c = fs.readFileSync('public/index.html', 'utf8').replace(/^\uFEFF/, '');
+const i = c.indexOf('<script>');
+const j = c.indexOf('</script>', i);
+const body = c.slice(i + 8, j);
+const names = ['sendChatMsg', 'sendTextMsg', 'toggleAttachMenu', 'chooseAttachment', 'onPickAttachment', 'cancelAttachment', 'sendAttachmentMsg', 'bubbleHtml', 'refreshChat', 'loadThreads', 'applyWallet', 'api', 'esc', 'chatCost', 'toast'];
+for (const n of names) console.log(n, '=>', (body.match(new RegExp('function ' + n + '\\b')) || []).length, 'def', (body.match(new RegExp(n + '\\(')) || []).length, 'call');
+console.log('--- sendChatMsg body ---');
+const k = body.indexOf('function sendChatMsg');
+console.log(body.slice(k, k + 400));
+console.log('--- does chatText belong to messages composer? where is send btn call ---');
+const kk = body.indexOf('onkeydown="if(event.key===\'Enter\')sendChatMsg()"'.replace('AttachMenu', '@') );
