@@ -1,6 +1,8 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Index(['sender_id', 'receiver_id'])
+@Index('IDX_message_receiver_read', ['receiver_id', 'read'])
+@Index('IDX_message_created_at', ['created_at'])
 @Entity('message')
 export class Message {
   @PrimaryGeneratedColumn()

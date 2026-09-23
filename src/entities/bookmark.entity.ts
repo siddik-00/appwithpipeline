@@ -1,6 +1,7 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Index(['post_id', 'user_id'])
+@Index('IDX_bookmark_created_at', ['created_at'])
 @Entity('bookmark')
 export class Bookmark {
   @PrimaryGeneratedColumn()

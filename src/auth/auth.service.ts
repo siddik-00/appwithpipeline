@@ -53,9 +53,10 @@ export class AuthService {
     const exists = await this.users.findOne({ where: { username } });
     if (exists)
       httpBadge(HttpStatus.BAD_REQUEST, 'Username already exists');
+    const password_hash = await bcrypt.hash(password, 10);
     const user = this.users.create({
       username,
-      password_hash: bcrypt.hashSync(password, 10),
+      password_hash,
       first_name,
       last_name,
       name: `${first_name} ${last_name}`.trim() || username,
@@ -73,8 +74,8 @@ export class AuthService {
     const username = ((body.username as string) || '').trim();
     const password = (body.password as string) || '';
     const user = await this.users.findOne({ where: { username } });
-    if (!user || !bcrypt.compareSync(password, user.password_hash))
-      httpBadge(HttpStatus.BAD_REQUEST, 'Invalid credentials');
+    const ok = user && (await bcrypt.compare(password, user.password_hash));
+    if (!ok) httpBadge(HttpStatus.BAD_REQUEST, 'Invalid credentials');
     user.online = true;
     await this.users.save(user);
     const token = randomUUID();

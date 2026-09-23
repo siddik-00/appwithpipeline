@@ -115,18 +115,20 @@ export class MessagesService {
     if (content.length > 2000) httpBadge(HttpStatus.BAD_REQUEST, 'Message too long');
     const cost = Math.round((target.message_cost || MESSAGE_COST_BDT) * 100) / 100;
     const m = await this.messages.manager.transaction(async (em) => {
-      const sender = await em.findOne(User, { where: { id: user.id } });
-      if (!sender)
-        httpBadge(HttpStatus.UNAUTHORIZED, 'Not authenticated');
-      if ((sender.balance || 0) < cost)
+      const res = await em
+        .createQueryBuilder()
+        .update(User)
+        .set({
+          balance: () => `ROUND("balance" - ${cost}, 2)`,
+          total_spent: () => `ROUND("total_spent" + ${cost}, 2)`,
+        })
+        .where('id = :id AND "balance" >= :cost', { id: user.id, cost })
+        .execute();
+      if (!res.affected)
         httpBadge(
           HttpStatus.PAYMENT_REQUIRED,
           `Insufficient wallet balance (Tk ${cost} needed to message). Add BDT (Taka) from your Profile -> Wallet.`,
         );
-      sender.balance = Math.round((sender.balance - cost) * 100) / 100;
-      sender.total_spent =
-        Math.round(((sender.total_spent || 0) + cost) * 100) / 100;
-      await em.save(User, sender);
       return em.save(
         em.create(Message, {
           sender_id: user.id,
@@ -135,10 +137,11 @@ export class MessagesService {
         }),
       );
     });
+    const senderFresh = await this.users.findOne({ where: { id: user.id } });
     return {
       ok: true,
       cost,
-      balance: Math.round((user.balance - cost) * 100) / 100,
+      balance: Math.round((senderFresh!.balance || 0) * 100) / 100,
       message: {
         id: m.id,
         me: true,
@@ -192,17 +195,20 @@ export class MessagesService {
     const content = ((body.content as string) || '').trim();
     const cost = Math.round((target.message_cost || MESSAGE_COST_BDT) * 100) / 100;
     const m = await this.messages.manager.transaction(async (em) => {
-      const sender = await em.findOne(User, { where: { id: user.id } });
-      if (!sender) httpBadge(HttpStatus.UNAUTHORIZED, 'Not authenticated');
-      if ((sender.balance || 0) < cost)
+      const res = await em
+        .createQueryBuilder()
+        .update(User)
+        .set({
+          balance: () => `ROUND("balance" - ${cost}, 2)`,
+          total_spent: () => `ROUND("total_spent" + ${cost}, 2)`,
+        })
+        .where('id = :id AND "balance" >= :cost', { id: user.id, cost })
+        .execute();
+      if (!res.affected)
         httpBadge(
           HttpStatus.PAYMENT_REQUIRED,
           `Insufficient wallet balance (Tk ${cost} needed to message). Add BDT (Taka) from your Profile -> Wallet.`,
         );
-      sender.balance = Math.round((sender.balance - cost) * 100) / 100;
-      sender.total_spent =
-        Math.round(((sender.total_spent || 0) + cost) * 100) / 100;
-      await em.save(User, sender);
       return em.save(
         em.create(Message, {
           sender_id: user.id,
@@ -213,10 +219,11 @@ export class MessagesService {
         }),
       );
     });
+    const senderFresh = await this.users.findOne({ where: { id: user.id } });
     return {
       ok: true,
       cost,
-      balance: Math.round((user.balance - cost) * 100) / 100,
+      balance: Math.round((senderFresh!.balance || 0) * 100) / 100,
       message: {
         id: m.id,
         me: true,

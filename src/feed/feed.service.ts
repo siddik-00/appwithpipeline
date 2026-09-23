@@ -18,7 +18,10 @@ export class FeedService {
 
   async feed(token?: string) {
     const user = await this.auth.getCurrentUser(token);
-    const rows = await this.posts.find({ order: { id: 'DESC' } });
+    const rows = await this.posts.find({
+      order: { id: 'DESC' },
+      take: 100,
+    });
     return {
       user: publicUser(user) || null,
       posts: await this.postsService.buildPosts(rows, user),
@@ -36,6 +39,7 @@ export class FeedService {
       const matched = await this.posts.find({
         where: { content: ILike(`%${q}%`) },
         order: { id: 'DESC' },
+        take: 50,
       });
       for (const next of users) {
         results.push({ type: 'user', ...publicUser(next)! });

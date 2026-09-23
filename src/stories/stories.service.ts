@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, LessThan, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { Story } from '../entities/story.entity';
 import { StoryView } from '../entities/story-view.entity';
 import { User } from '../entities/user.entity';
@@ -22,30 +22,24 @@ export class StoriesService {
     const user = await this.auth.getCurrentUser(token);
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
-    const expiredRows = await this.stories.find();
-    const toDelete = expiredRows.filter(
-      (s) => new Date(s.created_at).getTime() < cutoff.getTime(),
-    );
-    if (toDelete.length) {
-      const expiredIds = toDelete.map((s) => s.id);
+    const expiredRows = await this.stories.find({
+      where: { created_at: LessThan(cutoff) },
+    });
+    if (expiredRows.length) {
+      const expiredIds = expiredRows.map((s) => s.id);
       await this.stories.delete(expiredIds);
       await this.storyViews.delete({ story_id: In(expiredIds) });
     }
 
-    const all = await this.stories.find();
-    const stories = all
-      .filter((s) => new Date(s.created_at).getTime() >= cutoff.getTime())
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-
-    const allViews = await this.storyViews.find();
-    const storyIds = allViews.map((v) => v.story_id);
-    const viewableStories = storyIds.length
-      ? await this.stories.find({ where: { id: In(storyIds) } })
+    const stories = await this.stories.find({
+      where: { created_at: MoreThanOrEqual(cutoff) },
+      order: { created_at: 'DESC' },
+    });
+    const storyIds = stories.map((s) => s.id);
+    const allViews = storyIds.length
+      ? await this.storyViews.find({ where: { story_id: In(storyIds) } })
       : [];
-    const ownerOf = new Map(viewableStories.map((s) => [s.id, s.user_id]));
+    const ownerOf = new Map(stories.map((s) => [s.id, s.user_id]));
     const counts = new Map<number, number>();
     for (const v of allViews) {
       if (ownerOf.get(v.story_id) !== v.user_id) {
@@ -105,8 +99,9 @@ export class StoriesService {
         this.storyViews.create({ story_id: storyId, user_id: user.id }),
       );
     }
-    const allViews = await this.storyViews.find({ where: { story_id: storyId } });
-    const count = allViews.filter((v) => v.user_id !== story!.user_id).length;
+    const count = await this.storyViews.count({
+      where: { story_id: storyId, user_id: Not(story!.user_id) },
+    });
     return { ok: true, view_count: count, viewed: true };
   }
 }
