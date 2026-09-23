@@ -83,6 +83,41 @@ export class AuthService {
     return { token, user: publicUser(user) };
   }
 
+  async forgotPassword(body: Record<string, unknown>) {
+    const username = ((body.username as string) || '').trim();
+    if (!username)
+      httpBadge(HttpStatus.BAD_REQUEST, 'Username required');
+    const user = await this.users.findOne({ where: { username } });
+    if (!user) httpBadge(HttpStatus.NOT_FOUND, 'User not found');
+    const token = randomUUID();
+    user.reset_token = token;
+    user.reset_token_expires = new Date(Date.now() + 30 * 60 * 1000);
+    await this.users.save(user);
+    return { ok: true, reset_token: token };
+  }
+
+  async resetPassword(body: Record<string, unknown>) {
+    const username = ((body.username as string) || '').trim();
+    const token = ((body.token as string) || '').trim();
+    const password = (body.password as string) || '';
+    if (!username || !token || !password)
+      httpBadge(
+        HttpStatus.BAD_REQUEST,
+        'Username, reset token and new password required',
+      );
+    const user = await this.users.findOne({ where: { username } });
+    if (!user) httpBadge(HttpStatus.NOT_FOUND, 'User not found');
+    if (!user.reset_token || user.reset_token !== token)
+      httpBadge(HttpStatus.BAD_REQUEST, 'Invalid reset token');
+    if (!user.reset_token_expires || +user.reset_token_expires < Date.now())
+      httpBadge(HttpStatus.BAD_REQUEST, 'Reset token expired');
+    user.password_hash = await bcrypt.hash(password, 10);
+    user.reset_token = null;
+    user.reset_token_expires = null;
+    await this.users.save(user);
+    return { ok: true };
+  }
+
   async logout(token?: string) {
     const username = token ? this.sessions.get(token) : undefined;
     if (token) this.sessions.delete(token);

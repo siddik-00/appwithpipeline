@@ -54,6 +54,12 @@ export class User {
   @Column({ default: false })
   online: boolean;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  reset_token: string | null;
+
+  @Column({ type: 'datetime', nullable: true })
+  reset_token_expires: Date | null;
+
   @Column({ type: 'real', default: 2 })
   message_cost: number;
 
