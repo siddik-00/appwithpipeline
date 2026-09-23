@@ -22,6 +22,7 @@ export type CommentDict = {
   can_delete: boolean;
   reaction_count: number;
   my_reaction: string;
+  parent_id: number | null;
 };
 
 export type PostDict = {
@@ -57,43 +58,6 @@ export class PostsService {
     private readonly auth: AuthService,
   ) {}
 
-  private async buildComments(
-    post: Post,
-    user: User | null,
-  ): Promise<CommentDict[]> {
-    const rows = await this.comments.find({
-      where: { post_id: post.id },
-      order: { created_at: 'ASC' },
-    });
-    const rowIds = rows.map((c) => c.id);
-    const reactionRows = rowIds.length
-      ? await this.commentReactions.find({ where: { comment_id: In(rowIds) } })
-      : [];
-    const reactCounts = new Map<number, number>();
-    const myReacts = new Map<number, string>();
-    for (const cr of reactionRows) {
-      reactCounts.set(cr.comment_id, (reactCounts.get(cr.comment_id) || 0) + 1);
-      if (user && cr.user_id === user.id) myReacts.set(cr.comment_id, cr.reaction);
-    }
-    const result: CommentDict[] = [];
-    for (const c of rows) {
-      const author = await this.users.findOne({ where: { id: c.user_id } });
-      result.push({
-        id: c.id,
-        content: c.content,
-        time: fmtDateTime(new Date(c.created_at)),
-        author: publicUser(author),
-        can_delete: !!(
-          user &&
-          (c.user_id === user.id || post.user_id === user.id)
-        ),
-        reaction_count: reactCounts.get(c.id) || 0,
-        my_reaction: myReacts.get(c.id) || '',
-      });
-    }
-    return result;
-  }
-
   async buildPosts(posts: Post[], user: User | null): Promise<PostDict[]> {
     if (!posts.length) return [];
     const ids = posts.map((p) => p.id);
@@ -110,15 +74,24 @@ export class PostsService {
       myLikes = new Map(rows.map((l) => [l.post_id, l]));
     }
 
-    const likeRows = await this.likes.find({ where: { post_id: In(ids) } });
+    const likeRows = await this.likes
+      .createQueryBuilder('l')
+      .select('l.post_id', 'pid')
+      .addSelect('l.reaction', 'reaction')
+      .addSelect('COUNT(*)', 'cnt')
+      .where('l.post_id IN (:...ids)', { ids })
+      .groupBy('l.post_id')
+      .addGroupBy('l.reaction')
+      .getRawMany();
     const likeCounts = new Map<number, number>();
     const reactionTotals = new Map<number, Record<string, number>>();
     for (const l of likeRows) {
-      likeCounts.set(l.post_id, (likeCounts.get(l.post_id) || 0) + 1);
+      const pid = Number(l.pid);
+      likeCounts.set(pid, (likeCounts.get(pid) || 0) + Number(l.cnt));
       const key = l.reaction || 'like';
-      const totals = reactionTotals.get(l.post_id) || {};
-      totals[key] = (totals[key] || 0) + 1;
-      reactionTotals.set(l.post_id, totals);
+      const totals = reactionTotals.get(pid) || {};
+      totals[key] = (totals[key] || 0) + Number(l.cnt);
+      reactionTotals.set(pid, totals);
     }
 
     let myMarks = new Set<number>();
@@ -138,20 +111,30 @@ export class PostsService {
       ? await this.users.find({ where: { id: In(commentUserIds) } })
       : [];
     const commentUsers = new Map(commentUserRows.map((u) => [u.id, u]));
-    const commentReactRows = commentRows.length
-      ? await this.commentReactions.find({
-          where: { comment_id: In(commentRows.map((c) => c.id)) },
-        })
+    const commentReactAgg = commentRows.length
+      ? await this.commentReactions
+          .createQueryBuilder('cr')
+          .select('cr.comment_id', 'cid')
+          .addSelect('COUNT(*)', 'cnt')
+          .where('cr.comment_id IN (:...cids)', {
+            cids: commentRows.map((c) => c.id),
+          })
+          .groupBy('cr.comment_id')
+          .getRawMany()
       : [];
     const commentReactCounts = new Map<number, number>();
+    for (const cr of commentReactAgg) {
+      commentReactCounts.set(Number(cr.cid), Number(cr.cnt));
+    }
     const myCommentReacts = new Map<number, string>();
-    for (const cr of commentReactRows) {
-      commentReactCounts.set(
-        cr.comment_id,
-        (commentReactCounts.get(cr.comment_id) || 0) + 1,
-      );
-      if (user && cr.user_id === user.id)
-        myCommentReacts.set(cr.comment_id, cr.reaction);
+    if (user && commentRows.length) {
+      const myReactRows = await this.commentReactions.find({
+        where: {
+          comment_id: In(commentRows.map((c) => c.id)),
+          user_id: user.id,
+        },
+      });
+      for (const cr of myReactRows) myCommentReacts.set(cr.comment_id, cr.reaction);
     }
     const commentsByPost = new Map<number, CommentDict[]>();
     for (const c of commentRows) {
@@ -161,6 +144,7 @@ export class PostsService {
         content: c.content,
         time: fmtDateTime(new Date(c.created_at)),
         author: publicUser(author || null),
+        parent_id: c.parent_id || null,
         can_delete: !!(
           user &&
           (c.user_id === user.id ||
@@ -355,8 +339,16 @@ export class PostsService {
     if (!post) httpBadge(HttpStatus.NOT_FOUND, 'Post not found');
     const content = ((body.content as string) || '').trim();
     if (!content) httpBadge(HttpStatus.BAD_REQUEST, 'Comment required');
+    let parent_id: number | null = null;
+    const rawPar = body ? Number((body as Record<string, unknown>).parent_id) : NaN;
+    if (Number.isInteger(rawPar) && rawPar > 0) {
+      const parent = await this.comments.findOne({ where: { id: rawPar } });
+      if (!parent || parent.post_id !== postId)
+        httpBadge(HttpStatus.BAD_REQUEST, 'Invalid parent comment');
+      parent_id = rawPar;
+    }
     const comment = await this.comments.save(
-      this.comments.create({ post_id: postId, user_id: user.id, content }),
+      this.comments.create({ post_id: postId, user_id: user.id, content, parent_id }),
     );
     const author = await this.users.findOne({ where: { id: post!.user_id } });
     if (author && author.id !== user.id) {
@@ -374,6 +366,7 @@ export class PostsService {
       content: comment.content,
       time: fmtDateTime(new Date(comment.created_at)),
       author: publicUser(user),
+      parent_id: comment.parent_id || null,
     };
   }
 

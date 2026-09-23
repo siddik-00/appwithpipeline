@@ -1,6 +1,8 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Index(['post_id', 'user_id'])
+@Index('IDX_comment_created_at', ['created_at'])
+@Index('IDX_comment_parent_id', ['parent_id'])
 @Entity('comment')
 export class Comment {
   @PrimaryGeneratedColumn()
@@ -13,6 +15,9 @@ export class Comment {
   @Index()
   @Column()
   user_id: number;
+
+  @Column({ type: 'int', nullable: true })
+  parent_id: number | null;
 
   @Column({ type: 'text' })
   content: string;

@@ -29,13 +29,18 @@ export class WalletService {
     if (raw > 1_000_000)
       httpBadge(HttpStatus.BAD_REQUEST, 'Amount is too large');
     const amount = round2(raw);
-    user.balance = round2((user.balance || 0) + amount);
-    await this.users.save(user);
+    await this.users
+      .createQueryBuilder()
+      .update(User)
+      .set({ balance: () => `ROUND("balance" + ${amount}, 2)` })
+      .where('id = :id', { id: user.id })
+      .execute();
+    const fresh = await this.users.findOne({ where: { id: user.id } });
     return {
       ok: true,
-      balance: user.balance,
-      total_spent: round2(user.total_spent || 0),
-      cost_per_message: round2(user.message_cost || MESSAGE_COST_BDT),
+      balance: fresh!.balance,
+      total_spent: round2(fresh!.total_spent || 0),
+      cost_per_message: round2(fresh!.message_cost || MESSAGE_COST_BDT),
     };
   }
 }
