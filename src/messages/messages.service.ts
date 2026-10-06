@@ -100,6 +100,9 @@ export class MessagesService {
         attachment_type: m.attachment_type || null,
         attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
+        ...(m.sender_id === user.id
+          ? { status: m.read ? 'delivered' : 'sent' }
+          : {}),
       })),
     };
   }
@@ -129,6 +132,7 @@ export class MessagesService {
         attachment_type: m.attachment_type || null,
         attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
+        status: 'sent',
       },
     };
   }
@@ -191,6 +195,7 @@ export class MessagesService {
         attachment_type: m.attachment_type || null,
         attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
+        status: 'sent',
       },
     };
   }
