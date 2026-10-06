@@ -11,7 +11,6 @@ import { SocialModule } from './social/social.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MessagesModule } from './messages/messages.module';
 import { ProfileModule } from './profile/profile.module';
-import { WalletModule } from './wallet/wallet.module';
 import { SeedService } from './seed.service';
 import { SqliteTuningService } from './common/sqlite-tuning.service';
 import { User } from './entities/user.entity';
@@ -41,7 +40,6 @@ import { CommentReaction } from './entities/comment-reaction.entity';
     NotificationsModule,
     MessagesModule,
     ProfileModule,
-    WalletModule,
   ],
   providers: [SeedService, SqliteTuningService],
 })

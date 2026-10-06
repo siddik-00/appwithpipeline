@@ -21,6 +21,16 @@ export class AuthController {
     return this.auth.logout(req.cookies?.['session_token']);
   }
 
+  @Post('/api/auth/forgot-password')
+  async forgotPassword(@Body() body: Record<string, unknown>) {
+    return this.auth.forgotPassword(body);
+  }
+
+  @Post('/api/auth/reset-password')
+  async resetPassword(@Body() body: Record<string, unknown>) {
+    return this.auth.resetPassword(body);
+  }
+
   @Get('/api/me')
   async me(@Req() req: Request): Promise<Record<string, unknown>> {
     const token = req.cookies?.['session_token'] as string | undefined;

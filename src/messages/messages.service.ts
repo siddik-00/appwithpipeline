@@ -7,7 +7,7 @@ import { randomBytes } from 'crypto';
 import { Message } from '../entities/message.entity';
 import { User } from '../entities/user.entity';
 import { fmtDateTime, fmtTime, publicUser } from '../common/util';
-import { httpBadge, MESSAGE_COST_BDT } from '../common/config';
+import { httpBadge } from '../common/config';
 import { AuthService } from '../auth/auth.service';
 
 const ATTACH_DISPLAY: Record<string, string> = {
@@ -100,6 +100,9 @@ export class MessagesService {
         attachment_type: m.attachment_type || null,
         attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
+        ...(m.sender_id === user.id
+          ? { status: m.read ? 'delivered' : 'sent' }
+          : {}),
       })),
     };
   }
@@ -113,35 +116,15 @@ export class MessagesService {
     const content = ((body.content as string) || '').trim();
     if (!content) httpBadge(HttpStatus.BAD_REQUEST, 'Message required');
     if (content.length > 2000) httpBadge(HttpStatus.BAD_REQUEST, 'Message too long');
-    const cost = Math.round((target.message_cost || MESSAGE_COST_BDT) * 100) / 100;
-    const m = await this.messages.manager.transaction(async (em) => {
-      const res = await em
-        .createQueryBuilder()
-        .update(User)
-        .set({
-          balance: () => `ROUND("balance" - ${cost}, 2)`,
-          total_spent: () => `ROUND("total_spent" + ${cost}, 2)`,
-        })
-        .where('id = :id AND "balance" >= :cost', { id: user.id, cost })
-        .execute();
-      if (!res.affected)
-        httpBadge(
-          HttpStatus.PAYMENT_REQUIRED,
-          `Insufficient wallet balance (Tk ${cost} needed to message). Add BDT (Taka) from your Profile -> Wallet.`,
-        );
-      return em.save(
-        em.create(Message, {
-          sender_id: user.id,
-          receiver_id: userId,
-          content,
-        }),
-      );
-    });
-    const senderFresh = await this.users.findOne({ where: { id: user.id } });
+    const m = await this.messages.save(
+      this.messages.create({
+        sender_id: user.id,
+        receiver_id: userId,
+        content,
+      }),
+    );
     return {
       ok: true,
-      cost,
-      balance: Math.round((senderFresh!.balance || 0) * 100) / 100,
       message: {
         id: m.id,
         me: true,
@@ -149,6 +132,7 @@ export class MessagesService {
         attachment_type: m.attachment_type || null,
         attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
+        status: 'sent',
       },
     };
   }
@@ -193,37 +177,17 @@ export class MessagesService {
     if (!data) httpBadge(HttpStatus.BAD_REQUEST, 'File data required');
     const url = this.saveAttachment(type, data);
     const content = ((body.content as string) || '').trim();
-    const cost = Math.round((target.message_cost || MESSAGE_COST_BDT) * 100) / 100;
-    const m = await this.messages.manager.transaction(async (em) => {
-      const res = await em
-        .createQueryBuilder()
-        .update(User)
-        .set({
-          balance: () => `ROUND("balance" - ${cost}, 2)`,
-          total_spent: () => `ROUND("total_spent" + ${cost}, 2)`,
-        })
-        .where('id = :id AND "balance" >= :cost', { id: user.id, cost })
-        .execute();
-      if (!res.affected)
-        httpBadge(
-          HttpStatus.PAYMENT_REQUIRED,
-          `Insufficient wallet balance (Tk ${cost} needed to message). Add BDT (Taka) from your Profile -> Wallet.`,
-        );
-      return em.save(
-        em.create(Message, {
-          sender_id: user.id,
-          receiver_id: userId,
-          content,
-          attachment_type: type,
-          attachment_url: url,
-        }),
-      );
-    });
-    const senderFresh = await this.users.findOne({ where: { id: user.id } });
+    const m = await this.messages.save(
+      this.messages.create({
+        sender_id: user.id,
+        receiver_id: userId,
+        content,
+        attachment_type: type,
+        attachment_url: url,
+      }),
+    );
     return {
       ok: true,
-      cost,
-      balance: Math.round((senderFresh!.balance || 0) * 100) / 100,
       message: {
         id: m.id,
         me: true,
@@ -231,6 +195,7 @@ export class MessagesService {
         attachment_type: m.attachment_type || null,
         attachment_url: m.attachment_url || null,
         time: fmtTime(new Date(m.created_at)),
+        status: 'sent',
       },
     };
   }
